@@ -1,6 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
-
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package activity
 
 import (
@@ -17,7 +30,7 @@ import (
 
 // ManageTray is an activity wrapper for Tray management via Flow
 type ManageTray struct {
-	flowGrpcAtomicClient *cClient.FlowGrpcAtomicClient
+	FlowAtomicClient *cClient.FlowAtomicClient
 }
 
 // GetTray retrieves a tray by its UUID from Flow
@@ -40,14 +53,12 @@ func (mt *ManageTray) GetTray(ctx context.Context, request *flowv1.GetComponentI
 	}
 
 	// Call Flow gRPC endpoint
-	grpcClient := mt.flowGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return nil, cClient.ErrFlowGrpcClientNotConnected
+	flow, err := mt.FlowAtomicClient.GetFlowClient()
+	if err != nil {
+		return nil, err
 	}
 
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-
-	response, err := grpcServiceClient.GetComponentInfoByID(ctx, request)
+	response, err := flow.GetComponentInfoByID(ctx, request)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get tray by ID using Flow API")
 		return nil, swe.WrapErr(err)
@@ -69,14 +80,12 @@ func (mt *ManageTray) GetTrays(ctx context.Context, request *flowv1.GetComponent
 	}
 
 	// Call Flow gRPC endpoint
-	grpcClient := mt.flowGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return nil, cClient.ErrFlowGrpcClientNotConnected
+	flow, err := mt.FlowAtomicClient.GetFlowClient()
+	if err != nil {
+		return nil, err
 	}
 
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-
-	response, err := grpcServiceClient.GetComponents(ctx, request)
+	response, err := flow.GetComponents(ctx, request)
 	if err != nil {
 		logger.Warn().Err(err).Msg("Failed to get list of trays using Flow API")
 		return nil, swe.WrapErr(err)
@@ -88,8 +97,8 @@ func (mt *ManageTray) GetTrays(ctx context.Context, request *flowv1.GetComponent
 }
 
 // NewManageTray returns a new ManageTray client
-func NewManageTray(flowGrpcAtomicClient *cClient.FlowGrpcAtomicClient) ManageTray {
+func NewManageTray(flowClient *cClient.FlowAtomicClient) ManageTray {
 	return ManageTray{
-		flowGrpcAtomicClient: flowGrpcAtomicClient,
+		FlowAtomicClient: flowClient,
 	}
 }

@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package workflow
 
@@ -23,6 +37,10 @@ import (
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/task"
 	"github.com/NVIDIA/infra-controller-rest/flow/pkg/common/devicetypes"
 )
+
+func mockUpdateTaskStatusForBringUp(ctx context.Context, arg *task.TaskStatusUpdate) error {
+	return nil
+}
 
 func mockBringUpControl(ctx context.Context, target common.Target) error {
 	return nil
@@ -107,7 +125,8 @@ func createBringUpTestComponents() []task.WorkflowComponent {
 func registerBringUpActivities(env *testsuite.TestWorkflowEnvironment) {
 	env.RegisterWorkflowWithOptions(bringUp, temporalworkflow.RegisterOptions{Name: "BringUp"})
 	env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
-	registerTaskUpdateActivities(env)
+	env.RegisterActivityWithOptions(mockUpdateTaskStatusForBringUp,
+		activity.RegisterOptions{Name: activitypkg.NameUpdateTaskStatus})
 	env.RegisterActivityWithOptions(mockPowerControl,
 		activity.RegisterOptions{Name: activitypkg.NamePowerControl})
 	env.RegisterActivityWithOptions(mockGetPowerStatus,
@@ -116,7 +135,6 @@ func registerBringUpActivities(env *testsuite.TestWorkflowEnvironment) {
 		activity.RegisterOptions{Name: activitypkg.NameBringUpControl})
 	env.RegisterActivityWithOptions(mockGetBringUpStatus,
 		activity.RegisterOptions{Name: activitypkg.NameGetBringUpStatus})
-	expectTaskUpdateActivities(env)
 }
 
 func TestBringUpWorkflow(t *testing.T) {
@@ -126,6 +144,7 @@ func TestBringUpWorkflow(t *testing.T) {
 	}{
 		"success": {
 			setupMocks: func(env *testsuite.TestWorkflowEnvironment) {
+				env.OnActivity(activitypkg.NameUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 				env.OnActivity(activitypkg.NamePowerControl, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				env.OnActivity(activitypkg.NameGetPowerStatus, mock.Anything, mock.Anything).Return(
 					map[string]operations.PowerStatus{
@@ -143,6 +162,7 @@ func TestBringUpWorkflow(t *testing.T) {
 		},
 		"power control failure": {
 			setupMocks: func(env *testsuite.TestWorkflowEnvironment) {
+				env.OnActivity(activitypkg.NameUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 				env.OnActivity(activitypkg.NameGetPowerStatus, mock.Anything, mock.Anything).Return(
 					map[string]operations.PowerStatus{
 						"ps-1": operations.PowerStatusOff,
@@ -197,16 +217,18 @@ func TestBringUpWorkflowWithIngestion(t *testing.T) {
 
 	env.RegisterWorkflowWithOptions(bringUp, temporalworkflow.RegisterOptions{Name: "BringUp"})
 	env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
-	registerTaskUpdateActivities(env)
+	env.RegisterActivityWithOptions(mockUpdateTaskStatusForBringUp,
+		activity.RegisterOptions{Name: activitypkg.NameUpdateTaskStatus})
 	env.RegisterActivityWithOptions(mockInjectExpectation,
 		activity.RegisterOptions{Name: activitypkg.NameInjectExpectation})
-	expectTaskUpdateActivities(env)
+
+	env.OnActivity(activitypkg.NameUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 	env.OnActivity(activitypkg.NameInjectExpectation, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	testComponents := []task.WorkflowComponent{
 		{ComponentID: "ps-1", Type: devicetypes.ComponentTypePowerShelf},
 		{ComponentID: "compute-1", Type: devicetypes.ComponentTypeCompute},
-		{ComponentID: "switch-1", Type: devicetypes.ComponentTypeNVSwitch},
+		{ComponentID: "switch-1", Type: devicetypes.ComponentTypeNVLSwitch},
 	}
 
 	ingestRule := &operationrules.RuleDefinition{
@@ -231,7 +253,7 @@ func TestBringUpWorkflowWithIngestion(t *testing.T) {
 				},
 			},
 			{
-				ComponentType: devicetypes.ComponentTypeNVSwitch,
+				ComponentType: devicetypes.ComponentTypeNVLSwitch,
 				Stage:         1,
 				MaxParallel:   0,
 				Timeout:       10 * time.Minute,

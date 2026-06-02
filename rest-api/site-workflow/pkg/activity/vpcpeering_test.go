@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -16,13 +30,13 @@ import (
 )
 
 func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -38,7 +52,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test create VpcPeering success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -53,7 +67,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test create VpcPeering fail on missing VpcId",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -67,7 +81,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test create VpcPeering fail on missing PeerVpcId",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -81,7 +95,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test create VpcPeering fail on missing VPC peering ID",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -95,7 +109,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test create VpcPeering fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -107,7 +121,7 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVpcPeering(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVpcPeering(tt.fields.NICoCoreAtomicClient)
 			err := mm.CreateVpcPeeringOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -119,13 +133,13 @@ func TestManageVpcPeering_CreateVpcPeeringOnSite(t *testing.T) {
 }
 
 func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -141,7 +155,7 @@ func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test delete VpcPeering success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -154,7 +168,7 @@ func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test delete VpcPeering fail on missing ID",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -167,7 +181,7 @@ func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
 		{
 			name: "test delete VpcPeering fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -179,7 +193,7 @@ func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVpcPeering(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVpcPeering(tt.fields.NICoCoreAtomicClient)
 			err := mm.DeleteVpcPeeringOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -191,10 +205,10 @@ func TestManageVpcPeering_DeleteVpcPeeringOnSite(t *testing.T) {
 }
 
 func TestManageVpcPeeringInventory_DiscoverVpcPeeringInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -202,7 +216,7 @@ func TestManageVpcPeeringInventory_DiscoverVpcPeeringInventory(t *testing.T) {
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -220,7 +234,7 @@ func TestManageVpcPeeringInventory_DiscoverVpcPeeringInventory(t *testing.T) {
 			name: "test collecting and publishing VpcPeering success, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -233,7 +247,7 @@ func TestManageVpcPeeringInventory_DiscoverVpcPeeringInventory(t *testing.T) {
 			name: "test collecting and publishing VpcPeering success, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -259,7 +273,7 @@ func TestManageVpcPeeringInventory_DiscoverVpcPeeringInventory(t *testing.T) {
 
 			manageVpcPeering := NewManageVpcPeeringInventory(ManageInventoryConfig{
 				SiteID:                tt.fields.siteID,
-				CoreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				NICoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				TemporalPublishClient: tc,
 				TemporalPublishQueue:  tt.fields.temporalPublishQueue,
 				SitePageSize:          tt.fields.sitePageSize,

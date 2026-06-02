@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package catalog
 
@@ -9,103 +23,51 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/capability"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/providerapi"
 	"github.com/NVIDIA/infra-controller-rest/flow/pkg/common/devicetypes"
 )
 
 func TestDescriptorNormalize(t *testing.T) {
 	descriptor, err := Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: " custom ",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    " custom ",
 		RequiredProviders: []string{" beta ", "alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityPowerControl,
-			" FirmwareControl ",
-			capability.CapabilityPowerControl,
-		},
 	}.Normalize()
 
 	require.NoError(t, err)
 	require.Equal(t, Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
 	}, descriptor)
 }
 
 func TestDescriptorEqual(t *testing.T) {
 	descriptor := Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
 	}
 
 	require.True(t, descriptor.Equal(Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
 	}))
 	require.False(t, descriptor.Equal(Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeNVSwitch,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeNVLSwitch,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
 	}))
 	require.False(t, descriptor.Equal(Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "other",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "other",
 		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
 	}))
 	require.False(t, descriptor.Equal(Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha"},
-		Capabilities: capability.CapabilitySet{
-			capability.CapabilityFirmwareControl,
-			capability.CapabilityPowerControl,
-		},
-	}))
-	require.False(t, descriptor.Equal(Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
-		RequiredProviders: []string{"alpha", "beta"},
-		Capabilities:      capability.CapabilitySet{capability.CapabilityPowerControl},
 	}))
 }
 
@@ -118,55 +80,27 @@ func TestDescriptorNormalizeRejectsInvalidDescriptor(t *testing.T) {
 		{
 			name: "unknown component type",
 			descriptor: Descriptor{
-				DescriptorIdentity: DescriptorIdentity{
-					Type:           devicetypes.ComponentTypeUnknown,
-					Implementation: "custom",
-				},
+				Type:           devicetypes.ComponentTypeUnknown,
+				Implementation: "custom",
 			},
 			wantErr: ErrUnknownComponentType,
 		},
 		{
 			name: "empty implementation",
 			descriptor: Descriptor{
-				DescriptorIdentity: DescriptorIdentity{
-					Type:           devicetypes.ComponentTypeCompute,
-					Implementation: " ",
-				},
+				Type:           devicetypes.ComponentTypeCompute,
+				Implementation: " ",
 			},
 			wantErr: ErrComponentManagerImplementationNameEmpty,
 		},
 		{
 			name: "empty required provider",
 			descriptor: Descriptor{
-				DescriptorIdentity: DescriptorIdentity{
-					Type:           devicetypes.ComponentTypeCompute,
-					Implementation: "custom",
-				},
+				Type:              devicetypes.ComponentTypeCompute,
+				Implementation:    "custom",
 				RequiredProviders: []string{"nico", " "},
 			},
 			wantErr: providerapi.ErrProviderNameEmpty,
-		},
-		{
-			name: "empty capability",
-			descriptor: Descriptor{
-				DescriptorIdentity: DescriptorIdentity{
-					Type:           devicetypes.ComponentTypeCompute,
-					Implementation: "custom",
-				},
-				Capabilities: capability.CapabilitySet{" "},
-			},
-			wantErr: capability.ErrNameEmpty,
-		},
-		{
-			name: "unknown capability",
-			descriptor: Descriptor{
-				DescriptorIdentity: DescriptorIdentity{
-					Type:           devicetypes.ComponentTypeCompute,
-					Implementation: "custom",
-				},
-				Capabilities: capability.CapabilitySet{"PowerStatsu"},
-			},
-			wantErr: capability.ErrUnknown,
 		},
 	}
 
@@ -183,49 +117,32 @@ func TestDescriptorNormalizeRejectsInvalidDescriptor(t *testing.T) {
 func TestNewIndexesNormalizedDescriptors(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: " custom ",
-			},
+			Type:              devicetypes.ComponentTypeCompute,
+			Implementation:    " custom ",
 			RequiredProviders: []string{" beta ", "alpha", "beta"},
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "builtin",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "builtin",
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypePowerShelf,
-				Implementation: "psm",
-			},
+			Type:           devicetypes.ComponentTypePowerShelf,
+			Implementation: "psm",
 		},
 	})
 	require.NoError(t, err)
 
-	descriptor, ok := catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeCompute,
-		Implementation: "custom",
-	})
+	descriptor, ok := catalog.Get(devicetypes.ComponentTypeCompute, "custom")
 	require.True(t, ok)
 	require.Equal(t, Descriptor{
-		DescriptorIdentity: DescriptorIdentity{
-			Type:           devicetypes.ComponentTypeCompute,
-			Implementation: "custom",
-		},
+		Type:              devicetypes.ComponentTypeCompute,
+		Implementation:    "custom",
 		RequiredProviders: []string{"alpha", "beta"},
 	}, descriptor)
 
-	_, ok = catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeCompute,
-		Implementation: "missing",
-	})
+	_, ok = catalog.Get(devicetypes.ComponentTypeCompute, "missing")
 	require.False(t, ok)
-	_, ok = catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeNVSwitch,
-		Implementation: "custom",
-	})
+	_, ok = catalog.Get(devicetypes.ComponentTypeNVLSwitch, "custom")
 	require.False(t, ok)
 
 	require.Equal(
@@ -233,7 +150,7 @@ func TestNewIndexesNormalizedDescriptors(t *testing.T) {
 		[]string{"builtin", "custom"},
 		catalog.Implementations(devicetypes.ComponentTypeCompute),
 	)
-	require.Empty(t, catalog.Implementations(devicetypes.ComponentTypeNVSwitch))
+	require.Empty(t, catalog.Implementations(devicetypes.ComponentTypeNVLSwitch))
 	require.Equal(
 		t,
 		map[devicetypes.ComponentType][]string{
@@ -247,68 +164,37 @@ func TestNewIndexesNormalizedDescriptors(t *testing.T) {
 func TestGetReturnsDescriptorCopy(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:              devicetypes.ComponentTypeCompute,
+			Implementation:    "custom",
 			RequiredProviders: []string{"alpha", "beta"},
-			Capabilities: capability.CapabilitySet{
-				capability.CapabilityFirmwareControl,
-				capability.CapabilityPowerControl,
-			},
 		},
 	})
 	require.NoError(t, err)
 
-	descriptor, ok := catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeCompute,
-		Implementation: "custom",
-	})
+	descriptor, ok := catalog.Get(devicetypes.ComponentTypeCompute, "custom")
 	require.True(t, ok)
 	descriptor.RequiredProviders = append(descriptor.RequiredProviders[:1], "mutated")
-	descriptor.Capabilities = append(descriptor.Capabilities[:1], "Mutated")
 
-	descriptor, ok = catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeCompute,
-		Implementation: "custom",
-	})
+	descriptor, ok = catalog.Get(devicetypes.ComponentTypeCompute, "custom")
 	require.True(t, ok)
 	require.Equal(t, []string{"alpha", "beta"}, descriptor.RequiredProviders)
-	require.Equal(
-		t,
-		capability.CapabilitySet{capability.CapabilityFirmwareControl, capability.CapabilityPowerControl},
-		descriptor.Capabilities,
-	)
 
 	descriptor.RequiredProviders[0] = "mutated"
-	descriptor.Capabilities[0] = "Mutated"
 
-	descriptor, ok = catalog.Get(DescriptorIdentity{
-		Type:           devicetypes.ComponentTypeCompute,
-		Implementation: "custom",
-	})
+	descriptor, ok = catalog.Get(devicetypes.ComponentTypeCompute, "custom")
 	require.True(t, ok)
 	require.Equal(t, []string{"alpha", "beta"}, descriptor.RequiredProviders)
-	require.Equal(
-		t,
-		capability.CapabilitySet{capability.CapabilityFirmwareControl, capability.CapabilityPowerControl},
-		descriptor.Capabilities,
-	)
 }
 
 func TestNewRejectsDuplicateDescriptor(t *testing.T) {
 	_, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: " custom ",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: " custom ",
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "custom",
 		},
 	})
 
@@ -324,27 +210,21 @@ func TestNewRejectsDuplicateDescriptor(t *testing.T) {
 func TestSelectedDescriptors(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeNVSwitch,
-				Implementation: "mock",
-			},
+			Type:              devicetypes.ComponentTypeNVLSwitch,
+			Implementation:    "mock",
 			RequiredProviders: []string{},
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypePowerShelf,
-				Implementation: "multi-provider",
-			},
+			Type:           devicetypes.ComponentTypePowerShelf,
+			Implementation: "multi-provider",
 			RequiredProviders: []string{
 				"beta",
 				"alpha",
 			},
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "custom",
 			RequiredProviders: []string{
 				"zeta",
 				"alpha",
@@ -355,34 +235,28 @@ func TestSelectedDescriptors(t *testing.T) {
 
 	descriptors, err := catalog.SelectedDescriptors(map[devicetypes.ComponentType]string{
 		devicetypes.ComponentTypePowerShelf: "multi-provider",
-		devicetypes.ComponentTypeNVSwitch:   "mock",
+		devicetypes.ComponentTypeNVLSwitch:  "mock",
 		devicetypes.ComponentTypeCompute:    "custom",
 	})
 
 	require.NoError(t, err)
 	require.Equal(t, []Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "custom",
 			RequiredProviders: []string{
 				"alpha",
 				"zeta",
 			},
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeNVSwitch,
-				Implementation: "mock",
-			},
+			Type:              devicetypes.ComponentTypeNVLSwitch,
+			Implementation:    "mock",
 			RequiredProviders: []string{},
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypePowerShelf,
-				Implementation: "multi-provider",
-			},
+			Type:           devicetypes.ComponentTypePowerShelf,
+			Implementation: "multi-provider",
 			RequiredProviders: []string{
 				"alpha",
 				"beta",
@@ -394,15 +268,9 @@ func TestSelectedDescriptors(t *testing.T) {
 func TestSelectedDescriptorsReturnsDescriptorCopies(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:              devicetypes.ComponentTypeCompute,
+			Implementation:    "custom",
 			RequiredProviders: []string{"alpha", "beta"},
-			Capabilities: capability.CapabilitySet{
-				capability.CapabilityFirmwareControl,
-				capability.CapabilityPowerControl,
-			},
 		},
 	})
 	require.NoError(t, err)
@@ -413,7 +281,6 @@ func TestSelectedDescriptorsReturnsDescriptorCopies(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, descriptors, 1)
 	descriptors[0].RequiredProviders[0] = "mutated"
-	descriptors[0].Capabilities[0] = "Mutated"
 
 	descriptors, err = catalog.SelectedDescriptors(map[devicetypes.ComponentType]string{
 		devicetypes.ComponentTypeCompute: "custom",
@@ -421,15 +288,9 @@ func TestSelectedDescriptorsReturnsDescriptorCopies(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:              devicetypes.ComponentTypeCompute,
+			Implementation:    "custom",
 			RequiredProviders: []string{"alpha", "beta"},
-			Capabilities: capability.CapabilitySet{
-				capability.CapabilityFirmwareControl,
-				capability.CapabilityPowerControl,
-			},
 		},
 	}, descriptors)
 }
@@ -437,10 +298,8 @@ func TestSelectedDescriptorsReturnsDescriptorCopies(t *testing.T) {
 func TestSelectedDescriptorsAllowsEmptySelection(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "custom",
 		},
 	})
 	require.NoError(t, err)
@@ -454,10 +313,8 @@ func TestSelectedDescriptorsAllowsEmptySelection(t *testing.T) {
 func TestSelectedDescriptorsRejectsUnregisteredComponentType(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "custom",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "custom",
 		},
 	})
 	require.NoError(t, err)
@@ -478,28 +335,20 @@ func TestSelectedDescriptorsRejectsUnregisteredComponentType(t *testing.T) {
 func TestSelectedDescriptorsRejectsUnknownImplementation(t *testing.T) {
 	catalog, err := New([]Descriptor{
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "known",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "known",
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeCompute,
-				Implementation: "alternate",
-			},
+			Type:           devicetypes.ComponentTypeCompute,
+			Implementation: "alternate",
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypeNVSwitch,
-				Implementation: "switch",
-			},
+			Type:           devicetypes.ComponentTypeNVLSwitch,
+			Implementation: "switch",
 		},
 		{
-			DescriptorIdentity: DescriptorIdentity{
-				Type:           devicetypes.ComponentTypePowerShelf,
-				Implementation: "switch",
-			},
+			Type:           devicetypes.ComponentTypePowerShelf,
+			Implementation: "switch",
 		},
 	})
 	require.NoError(t, err)
@@ -518,7 +367,7 @@ func TestSelectedDescriptorsRejectsUnknownImplementation(t *testing.T) {
 	require.Equal(t, "switch", implErr.Implementation)
 	require.Equal(t, []string{"alternate", "known"}, implErr.Available)
 	require.Equal(t, []devicetypes.ComponentType{
-		devicetypes.ComponentTypeNVSwitch,
+		devicetypes.ComponentTypeNVLSwitch,
 		devicetypes.ComponentTypePowerShelf,
 	}, implErr.RegisteredFor)
 }

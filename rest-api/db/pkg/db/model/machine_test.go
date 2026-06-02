@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package model
 
@@ -850,7 +864,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with ip filters returns objects",
 			filter: MachineFilterInput{
-				InfrastructureProviderIDs: []uuid.UUID{ms1[0].InfrastructureProviderID},
+				InfrastructureProviderID: &ms1[0].InfrastructureProviderID,
 			},
 			expectedCount: totalCount / 2,
 			expectedError: false,
@@ -858,7 +872,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with site filters returns objects",
 			filter: MachineFilterInput{
-				SiteIDs: []uuid.UUID{ms2[0].SiteID},
+				SiteID: &ms2[0].SiteID,
 			},
 			expectedCount: totalCount / 2,
 			expectedError: false,
@@ -866,7 +880,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with is assigned filters returns objects",
 			filter: MachineFilterInput{
-				SiteIDs:    []uuid.UUID{ms1[0].SiteID},
+				SiteID:     &ms1[0].SiteID,
 				IsAssigned: db.GetBoolPtr(true),
 			},
 			expectedCount: 1,
@@ -875,7 +889,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with unknown ip filters returns no objects",
 			filter: MachineFilterInput{
-				InfrastructureProviderIDs: []uuid.UUID{dummyID},
+				InfrastructureProviderID: &dummyID,
 			},
 			expectedCount: 0,
 			expectedError: false,
@@ -883,7 +897,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with hostname filters returns objects",
 			filter: MachineFilterInput{
-				SiteIDs:  []uuid.UUID{ms1[0].SiteID},
+				SiteID:   &ms1[0].SiteID,
 				Hostname: db.GetStrPtr("testhostname-1"),
 			},
 			expectedCount: 1,
@@ -892,7 +906,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with infiniband capabilitytype filters returns objects",
 			filter: MachineFilterInput{
-				CapabilityType: db.GetTypedStrPtr(MachineCapabilityTypeInfiniBand),
+				CapabilityType: db.GetStrPtr(MachineCapabilityTypeInfiniBand),
 			},
 			pageInput: paginator.PageInput{
 				OrderBy: &paginator.OrderBy{
@@ -907,7 +921,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with cpu capabilitytype filters returns objects",
 			filter: MachineFilterInput{
-				CapabilityType: db.GetTypedStrPtr(MachineCapabilityTypeCPU),
+				CapabilityType: db.GetStrPtr(MachineCapabilityTypeCPU),
 			},
 			expectedCount: 1,
 			firstEntry:    &ms1[1],
@@ -944,7 +958,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with offset returns objects",
 			filter: MachineFilterInput{
-				SiteIDs: []uuid.UUID{ms2[0].SiteID},
+				SiteID: &ms2[0].SiteID,
 			},
 			pageInput: paginator.PageInput{
 				Offset: db.GetIntPtr(5),
@@ -956,7 +970,7 @@ func TestMachineSQLDAO_GetAll(t *testing.T) {
 		{
 			desc: "GetAll with order by returns objects",
 			filter: MachineFilterInput{
-				SiteIDs: []uuid.UUID{ms2[0].SiteID},
+				SiteID: &ms2[0].SiteID,
 			},
 			pageInput: paginator.PageInput{
 				OrderBy: &paginator.OrderBy{
@@ -1774,21 +1788,21 @@ func TestMachineSQLDAO_GetCount(t *testing.T) {
 		{
 			desc: "filter with InfrastructureProviderID",
 			filter: MachineFilterInput{
-				InfrastructureProviderIDs: []uuid.UUID{ms1[0].InfrastructureProviderID},
+				InfrastructureProviderID: &ms1[0].InfrastructureProviderID,
 			},
 			expectedCount: totalCount / 2,
 		},
 		{
 			desc: "filter with SiteID",
 			filter: MachineFilterInput{
-				SiteIDs: []uuid.UUID{ms2[0].SiteID},
+				SiteID: &ms2[0].SiteID,
 			},
 			expectedCount: totalCount / 2,
 		},
 		{
 			desc: "filter with SiteID and IsAssigned",
 			filter: MachineFilterInput{
-				SiteIDs:    []uuid.UUID{ms1[0].SiteID},
+				SiteID:     &ms1[0].SiteID,
 				IsAssigned: db.GetBoolPtr(true),
 			},
 			expectedCount: 1,
@@ -1796,14 +1810,14 @@ func TestMachineSQLDAO_GetCount(t *testing.T) {
 		{
 			desc: "filter with unknown InfrastructureProviderID",
 			filter: MachineFilterInput{
-				InfrastructureProviderIDs: []uuid.UUID{dummyID},
+				InfrastructureProviderID: &dummyID,
 			},
 			expectedCount: 0,
 		},
 		{
 			desc: "filter with SiteID and Hostname",
 			filter: MachineFilterInput{
-				SiteIDs:  []uuid.UUID{ms1[0].SiteID},
+				SiteID:   &ms1[0].SiteID,
 				Hostname: db.GetStrPtr("testhostname-1"),
 			},
 			expectedCount: 1,
@@ -1811,7 +1825,7 @@ func TestMachineSQLDAO_GetCount(t *testing.T) {
 		{
 			desc: "filter with CapabilityType",
 			filter: MachineFilterInput{
-				CapabilityType: db.GetTypedStrPtr(MachineCapabilityTypeInfiniBand),
+				CapabilityType: db.GetStrPtr(MachineCapabilityTypeInfiniBand),
 			},
 			expectedCount: 2,
 		},

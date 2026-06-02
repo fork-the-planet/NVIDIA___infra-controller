@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -17,10 +31,10 @@ import (
 )
 
 func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -28,7 +42,7 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -45,7 +59,7 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 			name: "test collecting and publishing vpc inventory, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -58,7 +72,7 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 			name: "test collecting and publishing vpc inventory, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -76,9 +90,9 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 				mock.AnythingOfType("string"), mock.AnythingOfType("uuid.UUID"), mock.Anything).Return(wrun, nil)
 			tc.AssertNumberOfCalls(t, "ExecuteWorkflow", 0)
 
-			manageVPCInventory := NewManageVPCInventory(ManageInventoryConfig{
+			manageInstance := NewManageVPCInventory(ManageInventoryConfig{
 				SiteID:                tt.fields.siteID,
-				CoreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				NICoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				TemporalPublishClient: tc,
 				TemporalPublishQueue:  tt.fields.temporalPublishQueue,
 				SitePageSize:          tt.fields.sitePageSize,
@@ -93,7 +107,7 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 				totalPages++
 			}
 
-			err := manageVPCInventory.DiscoverVPCInventory(ctx)
+			err := manageInstance.DiscoverVPCInventory(ctx)
 			assert.NoError(t, err)
 
 			if tt.args.wantTotalItems == 0 {
@@ -122,16 +136,16 @@ func TestManageVPCInventory_DiscoverVPCInventory(t *testing.T) {
 }
 
 func TestManageVpc_CreateVpcOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	name := "best_vpc_ever"
 	org := "best_org_ever"
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -147,7 +161,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 		{
 			name: "test create vpc success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -163,7 +177,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 		{
 			name: "test create vpc fail on missing name",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -178,7 +192,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 		{
 			name: "test create vpc fail on missing org",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -193,7 +207,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 		{
 			name: "test create vpc fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -208,7 +222,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 		{
 			name: "test create vpc fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -219,7 +233,7 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVPC(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVPC(tt.fields.NICoCoreAtomicClient)
 			vpc, err := mm.CreateVpcOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -236,10 +250,10 @@ func TestManageVpc_CreateVpcOnSite(t *testing.T) {
 }
 
 func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	metedata := &cwssaws.Metadata{
 		Name: "test-name",
@@ -252,7 +266,7 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 	}
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -267,7 +281,7 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test update vpc success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -281,7 +295,7 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test update vpc fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -294,7 +308,7 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test update vpc fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -305,7 +319,7 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVPC(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVPC(tt.fields.NICoCoreAtomicClient)
 			err := mm.UpdateVpcOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -317,13 +331,13 @@ func TestManageInstance_UpdateVpcOnSiteOnSite(t *testing.T) {
 }
 
 func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -338,7 +352,7 @@ func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test delete vpc success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -351,7 +365,7 @@ func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test delete vpc fail on blank id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -364,7 +378,7 @@ func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
 		{
 			name: "test delete vpc fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -375,7 +389,7 @@ func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVPC(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVPC(tt.fields.NICoCoreAtomicClient)
 			err := mm.DeleteVpcOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -387,13 +401,13 @@ func TestManageInstance_DeleteVpcOnSiteOnSite(t *testing.T) {
 }
 
 func TestManageInstance_UpdateVpcVirtualizationOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -408,7 +422,7 @@ func TestManageInstance_UpdateVpcVirtualizationOnSite(t *testing.T) {
 		{
 			name: "test update vpc virtualization success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -422,7 +436,7 @@ func TestManageInstance_UpdateVpcVirtualizationOnSite(t *testing.T) {
 		{
 			name: "test update vpc virtualization fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -435,7 +449,7 @@ func TestManageInstance_UpdateVpcVirtualizationOnSite(t *testing.T) {
 		{
 			name: "test update vpc virtualization fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -446,7 +460,7 @@ func TestManageInstance_UpdateVpcVirtualizationOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageVPC(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageVPC(tt.fields.NICoCoreAtomicClient)
 			err := mm.UpdateVpcVirtualizationOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)

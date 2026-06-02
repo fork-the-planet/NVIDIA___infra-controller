@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package client
 
@@ -203,7 +217,7 @@ func componentTypeFromProto(ct pb.ComponentType) types.ComponentType {
 	switch ct {
 	case pb.ComponentType_COMPONENT_TYPE_COMPUTE:
 		return types.ComponentTypeCompute
-	case pb.ComponentType_COMPONENT_TYPE_NVSWITCH:
+	case pb.ComponentType_COMPONENT_TYPE_NVLSWITCH:
 		return types.ComponentTypeNVSwitch
 	case pb.ComponentType_COMPONENT_TYPE_POWERSHELF:
 		return types.ComponentTypePowerShelf
@@ -259,8 +273,8 @@ func diffTypeFromProto(dt pb.DiffType) types.DiffType {
 		return types.DiffTypeMissing
 	case pb.DiffType_DIFF_TYPE_UNEXPECTED:
 		return types.DiffTypeUnexpected
-	case pb.DiffType_DIFF_TYPE_MISMATCH:
-		return types.DiffTypeMismatch
+	case pb.DiffType_DIFF_TYPE_DRIFT:
+		return types.DiffTypeDrift
 	default:
 		return types.DiffTypeUnknown
 	}
@@ -432,7 +446,7 @@ func componentTypeToProto(ct types.ComponentType) pb.ComponentType {
 	case types.ComponentTypeCompute:
 		return pb.ComponentType_COMPONENT_TYPE_COMPUTE
 	case types.ComponentTypeNVSwitch:
-		return pb.ComponentType_COMPONENT_TYPE_NVSWITCH
+		return pb.ComponentType_COMPONENT_TYPE_NVLSWITCH
 	case types.ComponentTypePowerShelf:
 		return pb.ComponentType_COMPONENT_TYPE_POWERSHELF
 	case types.ComponentTypeTORSwitch:
@@ -463,7 +477,7 @@ func componentTypeToString(ct types.ComponentType) string {
 	case types.ComponentTypeCompute:
 		return "Compute"
 	case types.ComponentTypeNVSwitch:
-		return "NVSwitch"
+		return "NVLSwitch"
 	case types.ComponentTypePowerShelf:
 		return "PowerShelf"
 	case types.ComponentTypeTORSwitch:

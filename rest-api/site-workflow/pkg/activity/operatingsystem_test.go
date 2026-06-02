@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -16,15 +30,15 @@ import (
 )
 
 func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	orgID := "m4jjok8wsg"
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -39,7 +53,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 		{
 			name: "test create Operating System success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -54,7 +68,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 		{
 			name: "test create Operating System fails on missing org ID",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -68,7 +82,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 		{
 			name: "test create Operating System fails on missing source url",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -82,7 +96,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 		{
 			name: "test create Operating System fails on missing digest",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -96,7 +110,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 		{
 			name: "test create Operating System fails on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -107,7 +121,7 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt := NewManageOperatingSystem(tt.fields.coreGrpcAtomicClient)
+			mt := NewManageOperatingSystem(tt.fields.NICoCoreAtomicClient)
 			err := mt.CreateOsImageOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -119,15 +133,15 @@ func TestManageOsImage_CreateOsImageOnSite(t *testing.T) {
 }
 
 func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	orgID := "m4jjok8wsg"
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -142,7 +156,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 		{
 			name: "test update Operating System success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -157,7 +171,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 		{
 			name: "test update Operating System fails on missing org ID",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -171,7 +185,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 		{
 			name: "test update Operating System fails on missing source url",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -185,7 +199,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 		{
 			name: "test update Operating System fails on missing digest",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -199,7 +213,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 		{
 			name: "test update Operating System fails on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -210,7 +224,7 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt := NewManageOperatingSystem(tt.fields.coreGrpcAtomicClient)
+			mt := NewManageOperatingSystem(tt.fields.NICoCoreAtomicClient)
 			err := mt.UpdateOsImageOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -222,15 +236,15 @@ func TestManageOsImage_UpdateOsImageOnSite(t *testing.T) {
 }
 
 func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	orgID := "m4jjok8wsg"
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -245,7 +259,7 @@ func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
 		{
 			name: "test delete Operating System success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -259,7 +273,7 @@ func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
 		{
 			name: "test delete Operating System fails on missing org ID",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -270,7 +284,7 @@ func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
 		{
 			name: "test delete Operating System fails on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -281,7 +295,7 @@ func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt := NewManageOperatingSystem(tt.fields.coreGrpcAtomicClient)
+			mt := NewManageOperatingSystem(tt.fields.NICoCoreAtomicClient)
 			err := mt.DeleteOsImageOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -293,10 +307,10 @@ func TestManageOsImage_DeleteOsImageOnSite(t *testing.T) {
 }
 
 func TestManageOsImageInventory_DiscoverOsImageInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -304,7 +318,7 @@ func TestManageOsImageInventory_DiscoverOsImageInventory(t *testing.T) {
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -322,7 +336,7 @@ func TestManageOsImageInventory_DiscoverOsImageInventory(t *testing.T) {
 			name: "test collecting and publishing os image inventory fallback, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -335,7 +349,7 @@ func TestManageOsImageInventory_DiscoverOsImageInventory(t *testing.T) {
 			name: "test collecting and publishing os image inventory fallback, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -355,7 +369,7 @@ func TestManageOsImageInventory_DiscoverOsImageInventory(t *testing.T) {
 
 			manageOsImage := NewManageOsImageInventory(ManageInventoryConfig{
 				SiteID:                tt.fields.siteID,
-				CoreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				NICoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				TemporalPublishClient: tc,
 				TemporalPublishQueue:  tt.fields.temporalPublishQueue,
 				SitePageSize:          tt.fields.sitePageSize,

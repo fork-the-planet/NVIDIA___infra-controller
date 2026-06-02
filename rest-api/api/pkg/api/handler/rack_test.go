@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package handler
 
@@ -677,7 +691,7 @@ func TestValidateRackHandler_Handle(t *testing.T) {
 				TotalDiffs:      0,
 				MissingCount:    0,
 				UnexpectedCount: 0,
-				MismatchCount:   0,
+				DriftCount:      0,
 				MatchCount:      5,
 			},
 			expectedStatus: http.StatusOK,
@@ -701,7 +715,7 @@ func TestValidateRackHandler_Handle(t *testing.T) {
 				TotalDiffs:      1,
 				MissingCount:    1,
 				UnexpectedCount: 0,
-				MismatchCount:   0,
+				DriftCount:      0,
 				MatchCount:      4,
 			},
 			expectedStatus: http.StatusOK,
@@ -768,7 +782,7 @@ func TestValidateRackHandler_Handle(t *testing.T) {
 					resp.TotalDiffs = tt.mockResponse.TotalDiffs
 					resp.MissingCount = tt.mockResponse.MissingCount
 					resp.UnexpectedCount = tt.mockResponse.UnexpectedCount
-					resp.MismatchCount = tt.mockResponse.MismatchCount
+					resp.DriftCount = tt.mockResponse.DriftCount
 					resp.MatchCount = tt.mockResponse.MatchCount
 				}).Return(nil)
 			} else {
@@ -874,7 +888,7 @@ func TestValidateRacksHandler_Handle(t *testing.T) {
 				TotalDiffs:      0,
 				MissingCount:    0,
 				UnexpectedCount: 0,
-				MismatchCount:   0,
+				DriftCount:      0,
 				MatchCount:      10,
 			},
 			expectedStatus: http.StatusOK,
@@ -892,7 +906,7 @@ func TestValidateRacksHandler_Handle(t *testing.T) {
 				TotalDiffs:      0,
 				MissingCount:    0,
 				UnexpectedCount: 0,
-				MismatchCount:   0,
+				DriftCount:      0,
 				MatchCount:      5,
 			},
 			expectedStatus: http.StatusOK,
@@ -908,7 +922,7 @@ func TestValidateRacksHandler_Handle(t *testing.T) {
 			mockResponse: &flowv1.ValidateComponentsResponse{
 				Diffs: []*flowv1.ComponentDiff{
 					{
-						Type:        flowv1.DiffType_DIFF_TYPE_MISMATCH,
+						Type:        flowv1.DiffType_DIFF_TYPE_DRIFT,
 						ComponentId: "comp-1",
 						FieldDiffs: []*flowv1.FieldDiff{
 							{
@@ -922,7 +936,7 @@ func TestValidateRacksHandler_Handle(t *testing.T) {
 				TotalDiffs:      1,
 				MissingCount:    0,
 				UnexpectedCount: 0,
-				MismatchCount:   1,
+				DriftCount:      1,
 				MatchCount:      7,
 			},
 			expectedStatus: http.StatusOK,
@@ -991,7 +1005,7 @@ func TestValidateRacksHandler_Handle(t *testing.T) {
 					resp.TotalDiffs = tt.mockResponse.TotalDiffs
 					resp.MissingCount = tt.mockResponse.MissingCount
 					resp.UnexpectedCount = tt.mockResponse.UnexpectedCount
-					resp.MismatchCount = tt.mockResponse.MismatchCount
+					resp.DriftCount = tt.mockResponse.DriftCount
 					resp.MatchCount = tt.mockResponse.MatchCount
 				}).Return(nil)
 			} else {

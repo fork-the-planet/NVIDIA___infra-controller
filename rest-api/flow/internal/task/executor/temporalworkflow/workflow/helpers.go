@@ -1,11 +1,24 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package workflow
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -19,10 +32,8 @@ import (
 	taskcommon "github.com/NVIDIA/infra-controller-rest/flow/internal/task/common"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/executor/temporalworkflow/activity"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/executor/temporalworkflow/common"
-	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/message"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/operationrules"
-	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/report"
-	taskdef "github.com/NVIDIA/infra-controller-rest/flow/internal/task/task"
+	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/task"
 	"github.com/NVIDIA/infra-controller-rest/flow/pkg/common/devicetypes"
 )
 
@@ -42,47 +53,13 @@ func updateRunningTaskStatus(
 		return fmt.Errorf("task ID is not specified")
 	}
 
-	arg := &taskdef.TaskStatusUpdate{
+	arg := &task.TaskStatusUpdate{
 		ID:      taskID,
 		Status:  taskcommon.TaskStatusRunning,
-		Message: message.ForStatus(taskcommon.TaskStatusRunning),
+		Message: "Running",
 	}
 
 	return workflow.ExecuteActivity(ctx, activity.NameUpdateTaskStatus, arg).Get(ctx, nil)
-}
-
-// updateTaskReportBestEffort persists a report snapshot without failing the workflow.
-func updateTaskReportBestEffort(
-	ctx workflow.Context,
-	taskID uuid.UUID,
-	rep *report.Report,
-) {
-	if taskID == uuid.Nil || rep == nil {
-		return
-	}
-
-	raw, err := rep.MarshalRaw()
-	if err != nil {
-		log.Warn().Err(err).Msg("failed to marshal task report")
-		return
-	}
-
-	actx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: 30 * time.Second,
-		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: 1,
-		},
-	})
-
-	arg := &taskdef.TaskReportUpdate{
-		ID:     taskID,
-		Report: raw,
-	}
-
-	derr := workflow.ExecuteActivity(actx, activity.NameUpdateTaskReport, arg).Get(ctx, nil)
-	if derr != nil {
-		log.Warn().Err(derr).Str("task_id", taskID.String()).Msg("failed to update task report")
-	}
 }
 
 // updateFinishedTaskStatus records the terminal task status (Completed or Failed)
@@ -93,56 +70,28 @@ func updateFinishedTaskStatus(
 	ctx workflow.Context,
 	taskID uuid.UUID,
 	err error,
-	rep *report.Report,
 ) error {
 	if taskID == uuid.Nil {
 		return fmt.Errorf("task ID is not specified")
 	}
 
-	// A failure to marshal the report must not mask err: the original
-	// operation error is what determines the terminal task status. Drop
-	// the report from this status update and proceed; raw stays nil so
-	// the activity records the status without touching task.report.
-	var raw json.RawMessage
-	if rep != nil {
-		// rep.Error is the canonical task-level error and the Tracker is
-		// the authoritative writer (first failure wins; see
-		// Tracker.FailStage). Only fill it in here if the Tracker did
-		// not — e.g. a workflow that constructed a report outside the
-		// rule-based path and never called FailStage.
-		if err != nil && rep.Error == "" {
-			rep.Error = message.ForFailure(err)
-		}
-		r, merr := rep.MarshalRaw()
-		if merr != nil {
-			log.Warn().Err(merr).
-				Str("task_id", taskID.String()).
-				Msg("failed to marshal task report; recording status without report")
-		} else {
-			raw = r
-		}
-	}
-
-	var arg *taskdef.TaskStatusUpdate
+	var arg *task.TaskStatusUpdate
 
 	if err != nil {
-		arg = &taskdef.TaskStatusUpdate{
+		arg = &task.TaskStatusUpdate{
 			ID:      taskID,
 			Status:  taskcommon.TaskStatusFailed,
-			Message: message.ForFailure(err),
-			Report:  raw,
+			Message: err.Error(),
 		}
 	} else {
-		arg = &taskdef.TaskStatusUpdate{
+		arg = &task.TaskStatusUpdate{
 			ID:      taskID,
 			Status:  taskcommon.TaskStatusCompleted,
-			Message: message.ForStatus(taskcommon.TaskStatusCompleted),
-			Report:  raw,
+			Message: "Completed successfully",
 		}
 	}
 
-	lerr := workflow.ExecuteActivity(ctx, activity.NameUpdateTaskStatus, arg).Get(ctx, nil)
-	if lerr != nil {
+	if lerr := workflow.ExecuteActivity(ctx, activity.NameUpdateTaskStatus, arg).Get(ctx, nil); lerr != nil { //nolint
 		return errors.Join(err, fmt.Errorf("failed to update task status: %w", lerr))
 	}
 
@@ -152,7 +101,7 @@ func updateFinishedTaskStatus(
 // buildTargets groups the components in ExecutionInfo by type, returning a map
 // of ComponentType to Target. A nil info produces an empty (non-nil) map.
 func buildTargets(
-	info *taskdef.ExecutionInfo,
+	info *task.ExecutionInfo,
 ) map[devicetypes.ComponentType]common.Target {
 	if info == nil {
 		// This is unreachable code, but just in case, handle it anyway.
@@ -178,20 +127,6 @@ func buildTargets(
 	}
 
 	return results
-}
-
-// componentTotalsByType returns a per-ComponentType count of targeted
-// components, suitable for report.NewInitial. ComponentTypes absent from
-// typeToTargets do not appear in the result; NewInitial then sees them
-// as zero-count via map lookup and marks their steps skipped.
-func componentTotalsByType(
-	typeToTargets map[devicetypes.ComponentType]common.Target,
-) map[devicetypes.ComponentType]int {
-	out := make(map[devicetypes.ComponentType]int, len(typeToTargets))
-	for ct, target := range typeToTargets {
-		out[ct] = len(target.ComponentIDs)
-	}
-	return out
 }
 
 // buildActivityOptions constructs activity options from a sequence step
@@ -369,37 +304,24 @@ func parseDurationParam(val any) time.Duration {
 	}
 }
 
-// executeRuleBasedOperation drives the rule's stages in order. At each
-// stage boundary it advances the report.Tracker (begin -> complete or
-// fail) and emits a best-effort report snapshot to the store. The first
-// stage that fails short-circuits the loop; the partially-populated
-// report is returned alongside the wrapped stage error so the caller can
-// attach it to the terminal task status.
+// executeRuleBasedOperation drives any operation through its RuleDefinition.
+// Stages execute sequentially; steps within a stage execute in parallel via
+// child workflows.
 func executeRuleBasedOperation(
 	ctx workflow.Context,
-	taskID uuid.UUID,
 	typeToTargets map[devicetypes.ComponentType]common.Target,
 	operationInfo any,
 	ruleDef *operationrules.RuleDefinition,
-) (*report.Report, error) {
+) error {
 	if ruleDef == nil {
-		return nil, fmt.Errorf(
+		return fmt.Errorf(
 			"rule definition is nil (resolver should never return nil)",
 		)
 	}
 
 	if len(ruleDef.Steps) == 0 {
-		return nil, fmt.Errorf("rule definition has no steps")
+		return fmt.Errorf("rule definition has no steps")
 	}
-
-	// The report mirrors the rule's stage layout up front: every stage
-	// and every SequenceStep has a slot from the moment NewInitial
-	// returns. Tracker advances those slots as the workflow progresses.
-	tracker := &report.Tracker{
-		Report: report.NewInitial(ruleDef, componentTotalsByType(typeToTargets)),
-	}
-
-	updateTaskReportBestEffort(ctx, taskID, tracker.Report)
 
 	log.Info().
 		Int("step_count", len(ruleDef.Steps)).
@@ -407,32 +329,23 @@ func executeRuleBasedOperation(
 
 	iter := operationrules.NewStageIterator(ruleDef)
 	for stage := iter.Next(); stage != nil; stage = iter.Next() {
-		tracker.BeginStage(stage.Number, workflow.Now(ctx))
-		updateTaskReportBestEffort(ctx, taskID, tracker.Report)
-
 		log.Info().
 			Int("stage", stage.Number).
 			Int("step_count", len(stage.Steps)).
 			Msg("Executing stage")
 
-		err := executeGenericStageParallel(
+		if err := executeGenericStageParallel(
 			ctx,
 			stage.Steps,
 			typeToTargets,
 			operationInfo,
-		)
-		if err != nil {
-			tracker.FailStage(stage.Number, err, workflow.Now(ctx))
-			updateTaskReportBestEffort(ctx, taskID, tracker.Report)
+		); err != nil {
 			log.Error().
 				Err(err).
 				Int("stage", stage.Number).
 				Msg("Stage execution failed")
-			return tracker.Report, fmt.Errorf("stage %d failed: %w", stage.Number, err)
+			return fmt.Errorf("stage %d failed: %w", stage.Number, err)
 		}
-
-		tracker.CompleteStage(stage.Number, workflow.Now(ctx))
-		updateTaskReportBestEffort(ctx, taskID, tracker.Report)
 
 		log.Info().
 			Int("stage", stage.Number).
@@ -440,5 +353,5 @@ func executeRuleBasedOperation(
 	}
 
 	log.Info().Msg("Rule-based operation completed successfully")
-	return tracker.Report, nil
+	return nil
 }

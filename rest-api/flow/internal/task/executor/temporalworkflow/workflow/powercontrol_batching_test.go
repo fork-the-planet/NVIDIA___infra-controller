@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package workflow
 
@@ -80,12 +94,15 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 		env.RegisterActivityWithOptions(mockPowerControlWithTracking, activity.RegisterOptions{
 			Name: activitypkg.NamePowerControl,
 		})
-		registerTaskUpdateActivities(env)
+		env.RegisterActivityWithOptions(mockUpdateTaskStatus, activity.RegisterOptions{
+			Name: activitypkg.NameUpdateTaskStatus,
+		})
 		env.RegisterActivityWithOptions(mockGetPowerStatus, activity.RegisterOptions{
 			Name: activitypkg.NameGetPowerStatus,
 		})
 		env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
 
+		env.OnActivity(mockUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 		env.OnActivity(mockGetPowerStatus, mock.Anything, mock.Anything).Return(
 			func(ctx context.Context, target common.Target) (map[string]operations.PowerStatus, error) {
 				// Return "On" status for all components
@@ -106,7 +123,6 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 			RuleDefinition: ruleDef,
 		}
 
-		expectTaskUpdateActivities(env)
 		env.ExecuteWorkflow(powerControl, reqInfo, info)
 
 		assert.True(t, env.IsWorkflowCompleted())
@@ -125,9 +141,9 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 			newTestComponent(uuid.New(), "compute-3", "ext-compute-3", devicetypes.ComponentTypeCompute),
 			newTestComponent(uuid.New(), "compute-4", "ext-compute-4", devicetypes.ComponentTypeCompute),
 			// 3 switches
-			newTestComponent(uuid.New(), "switch-1", "ext-switch-1", devicetypes.ComponentTypeNVSwitch),
-			newTestComponent(uuid.New(), "switch-2", "ext-switch-2", devicetypes.ComponentTypeNVSwitch),
-			newTestComponent(uuid.New(), "switch-3", "ext-switch-3", devicetypes.ComponentTypeNVSwitch),
+			newTestComponent(uuid.New(), "switch-1", "ext-switch-1", devicetypes.ComponentTypeNVLSwitch),
+			newTestComponent(uuid.New(), "switch-2", "ext-switch-2", devicetypes.ComponentTypeNVLSwitch),
+			newTestComponent(uuid.New(), "switch-3", "ext-switch-3", devicetypes.ComponentTypeNVLSwitch),
 		}
 
 		// Define rule with different max_parallel for each type, same stage
@@ -141,7 +157,7 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 					MainOperation: operationrules.ActionConfig{Name: operationrules.ActionPowerControl},
 				},
 				{
-					ComponentType: devicetypes.ComponentTypeNVSwitch,
+					ComponentType: devicetypes.ComponentTypeNVLSwitch,
 					Stage:         1,
 					MaxParallel:   3, // Switch: 3 at a time (all at once)
 					MainOperation: operationrules.ActionConfig{Name: operationrules.ActionPowerControl},
@@ -165,12 +181,15 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 		env.RegisterActivityWithOptions(mockPowerControlTypeTracking, activity.RegisterOptions{
 			Name: activitypkg.NamePowerControl,
 		})
-		registerTaskUpdateActivities(env)
+		env.RegisterActivityWithOptions(mockUpdateTaskStatus, activity.RegisterOptions{
+			Name: activitypkg.NameUpdateTaskStatus,
+		})
 		env.RegisterActivityWithOptions(mockGetPowerStatus, activity.RegisterOptions{
 			Name: activitypkg.NameGetPowerStatus,
 		})
 		env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
 
+		env.OnActivity(mockUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 		env.OnActivity(mockGetPowerStatus, mock.Anything, mock.Anything).Return(
 			func(ctx context.Context, target common.Target) (map[string]operations.PowerStatus, error) {
 				// Return "On" status for all components
@@ -193,7 +212,6 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 			RuleDefinition: ruleDef,
 		}
 
-		expectTaskUpdateActivities(env)
 		env.ExecuteWorkflow(powerControl, reqInfo, info)
 
 		assert.True(t, env.IsWorkflowCompleted())
@@ -240,13 +258,16 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 		env.RegisterActivityWithOptions(mockPowerControl, activity.RegisterOptions{
 			Name: activitypkg.NamePowerControl,
 		})
-		registerTaskUpdateActivities(env)
+		env.RegisterActivityWithOptions(mockUpdateTaskStatus, activity.RegisterOptions{
+			Name: activitypkg.NameUpdateTaskStatus,
+		})
 		env.RegisterActivityWithOptions(mockGetPowerStatus, activity.RegisterOptions{
 			Name: activitypkg.NameGetPowerStatus,
 		})
 		env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
 
 		env.OnActivity(mockPowerControl, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		env.OnActivity(mockUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 		env.OnActivity(mockGetPowerStatus, mock.Anything, mock.Anything).Return(
 			func(ctx context.Context, target common.Target) (map[string]operations.PowerStatus, error) {
 				// Return "On" status for all components
@@ -267,7 +288,6 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 			RuleDefinition: ruleDef,
 		}
 
-		expectTaskUpdateActivities(env)
 		env.ExecuteWorkflow(powerControl, reqInfo, info)
 
 		assert.True(t, env.IsWorkflowCompleted())
@@ -304,13 +324,16 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 		env.RegisterActivityWithOptions(mockPowerControl, activity.RegisterOptions{
 			Name: activitypkg.NamePowerControl,
 		})
-		registerTaskUpdateActivities(env)
+		env.RegisterActivityWithOptions(mockUpdateTaskStatus, activity.RegisterOptions{
+			Name: activitypkg.NameUpdateTaskStatus,
+		})
 		env.RegisterActivityWithOptions(mockGetPowerStatus, activity.RegisterOptions{
 			Name: activitypkg.NameGetPowerStatus,
 		})
 		env.RegisterWorkflowWithOptions(genericComponentStepWorkflow, temporalworkflow.RegisterOptions{Name: nameGenericComponentStepWorkflow})
 
 		env.OnActivity(mockPowerControl, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		env.OnActivity(mockUpdateTaskStatus, mock.Anything, mock.Anything).Return(nil)
 		env.OnActivity(mockGetPowerStatus, mock.Anything, mock.Anything).Return(
 			func(ctx context.Context, target common.Target) (map[string]operations.PowerStatus, error) {
 				// Return "On" status for all components
@@ -329,7 +352,6 @@ func TestPowerControlWorkflowWithBatching(t *testing.T) {
 			RuleDefinition: ruleDef,
 		}
 
-		expectTaskUpdateActivities(env)
 		env.ExecuteWorkflow(powerControl, reqInfo, info)
 
 		assert.True(t, env.IsWorkflowCompleted())

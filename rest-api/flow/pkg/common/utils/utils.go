@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package utils
 
@@ -43,7 +57,7 @@ func StructToMap(obj any) map[string]any {
 	}
 
 	t := reflect.TypeOf(obj)
-	for i := range v.NumField() {
+	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		fieldValue := v.Field(i)
 
@@ -185,7 +199,7 @@ func deepCopyValue(value any) any {
 		return mapCopy.Interface()
 	case reflect.Slice:
 		sliceCopy := reflect.MakeSlice(v.Type(), v.Len(), v.Cap())
-		for i := range v.Len() {
+		for i := 0; i < v.Len(); i++ {
 			sliceCopy.Index(i).Set(reflect.ValueOf(deepCopyValue(v.Index(i).Interface())))
 		}
 		return sliceCopy.Interface()
@@ -198,7 +212,7 @@ func deepCopyValue(value any) any {
 		return ptrCopy.Interface()
 	case reflect.Struct:
 		structCopy := reflect.New(v.Type()).Elem()
-		for i := range v.NumField() {
+		for i := 0; i < v.NumField(); i++ {
 			if structCopy.Field(i).CanSet() {
 				structCopy.Field(i).Set(reflect.ValueOf(deepCopyValue(v.Field(i).Interface())))
 			}

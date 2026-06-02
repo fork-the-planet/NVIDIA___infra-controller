@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -23,7 +37,7 @@ import (
 
 // ManageInstanceType is an activity wrapper for InstanceType management tasks that allows injecting DB access
 type ManageInstanceType struct {
-	coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+	NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 }
 
 // Function to Create NICo InstanceType with the Site Controller
@@ -45,16 +59,16 @@ func (mm *ManageInstanceType) CreateInstanceTypeOnSite(ctx context.Context, requ
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mm.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mm.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.CreateInstanceType(ctx, request)
+	_, err = rpcClient.CreateInstanceType(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to create InstanceType using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to create InstanceType using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -82,16 +96,16 @@ func (mm *ManageInstanceType) UpdateInstanceTypeOnSite(ctx context.Context, requ
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mm.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mm.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.UpdateInstanceType(ctx, request)
+	_, err = rpcClient.UpdateInstanceType(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to update config for InstanceType using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to update config for InstanceType using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -119,16 +133,16 @@ func (mm *ManageInstanceType) DeleteInstanceTypeOnSite(ctx context.Context, requ
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mm.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mm.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.DeleteInstanceType(ctx, request)
+	_, err = rpcClient.DeleteInstanceType(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to delete InstanceType using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to delete InstanceType using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -159,16 +173,16 @@ func (mm *ManageInstanceType) AssociateMachinesWithInstanceTypeOnSite(ctx contex
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mm.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mm.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.AssociateMachinesWithInstanceType(ctx, request)
+	_, err = rpcClient.AssociateMachinesWithInstanceType(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to associate Machines with InstanceType using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to associate Machines with InstanceType using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -197,16 +211,16 @@ func (mm *ManageInstanceType) RemoveMachineInstanceTypeAssociationOnSite(ctx con
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mm.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mm.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.RemoveMachineInstanceTypeAssociation(ctx, request)
+	_, err = rpcClient.RemoveMachineInstanceTypeAssociation(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to associate Machines with InstanceType using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to associate Machines with InstanceType using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -216,9 +230,9 @@ func (mm *ManageInstanceType) RemoveMachineInstanceTypeAssociationOnSite(ctx con
 }
 
 // NewManageInstanceType returns a new ManageInstanceType activity
-func NewManageInstanceType(coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient) ManageInstanceType {
+func NewManageInstanceType(nicoClient *cClient.NICoCoreAtomicClient) ManageInstanceType {
 	return ManageInstanceType{
-		coreGrpcAtomicClient: coreGrpcAtomicClient,
+		NICoCoreAtomicClient: nicoClient,
 	}
 }
 
@@ -248,20 +262,20 @@ func NewManageInstanceTypeInventory(config ManageInventoryConfig) ManageInstance
 	}
 }
 
-func instanceTypeFindIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient) ([]*cwssaws.UUID, error) {
-	// Call Core gRPC API endpoint
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-	instanceTypeIdList, err := grpcServiceClient.FindInstanceTypeIds(ctx, &cwssaws.FindInstanceTypeIdsRequest{})
+func instanceTypeFindIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient) ([]*cwssaws.UUID, error) {
+	// Call Site Controller gRPC endpoint
+	rpcClient := nicoClient.NICo()
+	instanceTypeIdList, err := rpcClient.FindInstanceTypeIds(ctx, &cwssaws.FindInstanceTypeIdsRequest{})
 	if err != nil {
 		return nil, err
 	}
 	return util.StringsToProtobufUUIDList(instanceTypeIdList.GetInstanceTypeIds()), nil
 }
 
-func instanceTypeFindByIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient, ids []*cwssaws.UUID) ([]*cwssaws.InstanceType, error) {
-	// Call Core gRPC API endpoint
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-	instanceTypeList, err := grpcServiceClient.FindInstanceTypesByIds(ctx, &cwssaws.FindInstanceTypesByIdsRequest{
+func instanceTypeFindByIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient, ids []*cwssaws.UUID) ([]*cwssaws.InstanceType, error) {
+	// Call Site Controller gRPC endpoint
+	rpcClient := nicoClient.NICo()
+	instanceTypeList, err := rpcClient.FindInstanceTypesByIds(ctx, &cwssaws.FindInstanceTypesByIdsRequest{
 		InstanceTypeIds: util.ProtobufUUIDListToStringList(ids),
 	})
 	if err != nil {

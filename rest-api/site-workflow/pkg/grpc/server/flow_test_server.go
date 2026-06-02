@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package server
 
@@ -593,7 +607,7 @@ func (r *FlowServerImpl) ValidateComponents(ctx context.Context, req *flowv1.Val
 	var diffs []*flowv1.ComponentDiff
 	missingCount := 0
 	unexpectedCount := 0
-	mismatchCount := 0
+	driftCount := 0
 	matchCount := 0
 
 	// Find components only in expected
@@ -632,11 +646,11 @@ func (r *FlowServerImpl) ValidateComponents(ctx context.Context, req *flowv1.Val
 					ActualValue:   actualComp.FirmwareVersion,
 				})
 				diffs = append(diffs, &flowv1.ComponentDiff{
-					Type:        flowv1.DiffType_DIFF_TYPE_MISMATCH,
+					Type:        flowv1.DiffType_DIFF_TYPE_DRIFT,
 					ComponentId: compID,
 					FieldDiffs:  fieldDiffs,
 				})
-				mismatchCount++
+				driftCount++
 			} else {
 				matchCount++
 			}
@@ -648,7 +662,7 @@ func (r *FlowServerImpl) ValidateComponents(ctx context.Context, req *flowv1.Val
 		TotalDiffs:      int32(len(diffs)),
 		MissingCount:    int32(missingCount),
 		UnexpectedCount: int32(unexpectedCount),
-		MismatchCount:   int32(mismatchCount),
+		DriftCount:      int32(driftCount),
 		MatchCount:      int32(matchCount),
 	}, nil
 }
@@ -750,18 +764,6 @@ func (r *FlowServerImpl) ListTasks(ctx context.Context, req *flowv1.ListTasksReq
 		}
 		if req.RackId != nil && task.RackId != nil && task.RackId.Id != req.RackId.Id {
 			continue
-		}
-		if req.ComponentId != nil {
-			found := false
-			for _, cu := range task.GetComponentUuids() {
-				if cu != nil && cu.Id == req.ComponentId.Id {
-					found = true
-					break
-				}
-			}
-			if !found {
-				continue
-			}
 		}
 		tasks = append(tasks, task)
 	}

@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -23,13 +37,13 @@ import (
 )
 
 func TestManageMachine_SetMachineMaintenanceOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -44,7 +58,7 @@ func TestManageMachine_SetMachineMaintenanceOnSite(t *testing.T) {
 		{
 			name: "test enabling Machine maintenance mode success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -59,7 +73,7 @@ func TestManageMachine_SetMachineMaintenanceOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageMachine(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageMachine(tt.fields.nicoCoreAtomicClient)
 			err := mm.SetMachineMaintenanceOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -71,13 +85,13 @@ func TestManageMachine_SetMachineMaintenanceOnSite(t *testing.T) {
 }
 
 func TestManageMachine_UpdateMachineMetadataOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -93,7 +107,7 @@ func TestManageMachine_UpdateMachineMetadataOnSite(t *testing.T) {
 		{
 			name: "test updating Machine metadata success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -114,7 +128,7 @@ func TestManageMachine_UpdateMachineMetadataOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageMachine(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageMachine(tt.fields.nicoCoreAtomicClient)
 			err := mm.UpdateMachineMetadataOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -123,48 +137,6 @@ func TestManageMachine_UpdateMachineMetadataOnSite(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestManageMachine_CreateMachineHealthReportOverrideOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
-
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
-
-	mm := NewManageMachine(coreGrpcAtomicClient)
-	req := &cwssaws.InsertHealthReportOverrideRequest{
-		MachineId: &cwssaws.MachineId{Id: "machine-1"},
-		Override: &cwssaws.HealthReportOverride{
-			Report: &cwssaws.HealthReport{
-				Source: "request-online-repair",
-				Alerts: []*cwssaws.HealthProbeAlert{
-					{Id: "OnLineRepair", Message: `{"details":"d","issue_category":"OTHER","summary":"s"}`},
-				},
-			},
-			Mode: cwssaws.OverrideMode_Merge,
-		},
-	}
-	assert.NoError(t, mm.CreateMachineHealthReportOverrideOnSite(context.Background(), req))
-
-	err := mm.CreateMachineHealthReportOverrideOnSite(context.Background(), nil)
-	assert.Error(t, err)
-}
-
-func TestManageMachine_DeleteMachineHealthReportOverrideOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
-
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
-
-	mm := NewManageMachine(coreGrpcAtomicClient)
-	req := &cwssaws.RemoveHealthReportOverrideRequest{
-		MachineId: &cwssaws.MachineId{Id: "machine-1"},
-		Source:    "request-online-repair",
-	}
-	assert.NoError(t, mm.DeleteMachineHealthReportOverrideOnSite(context.Background(), req))
-
-	err := mm.DeleteMachineHealthReportOverrideOnSite(context.Background(), nil)
-	assert.Error(t, err)
 }
 
 func Test_getPagedInventory(t *testing.T) {
@@ -364,10 +336,10 @@ func Test_getPagedMachineIDs(t *testing.T) {
 }
 
 func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -375,7 +347,7 @@ func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) 
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -392,7 +364,7 @@ func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) 
 			name: "test collecting and publishing machine inventory, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -405,7 +377,7 @@ func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) 
 			name: "test collecting and publishing machine inventory, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -425,7 +397,7 @@ func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) 
 
 			mmi := &ManageMachineInventory{
 				siteID:                tt.fields.siteID,
-				coreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				nicoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				temporalPublishClient: tc,
 				temporalPublishQueue:  tt.fields.temporalPublishQueue,
 				sitePageSize:          tt.fields.sitePageSize,
@@ -470,8 +442,8 @@ func TestManageMachineInventory_CollectAndPublishMachineInventory(t *testing.T) 
 
 func TestManageMachine_GetDpuMachinesByIDs(t *testing.T) {
 	// Custom mock implementation that returns DPU machines
-	type mockDpuCoreGrpcClient struct {
-		cClient.MockCoreGrpcServiceClient
+	type mockDpuNICoClient struct {
+		cClient.MockNICoClient
 	}
 
 	mockFindMachinesByIds := func(ctx context.Context, in *cwssaws.MachinesByIdsRequest, opts ...grpc.CallOption) (*cwssaws.MachineList, error) {
@@ -558,13 +530,13 @@ func TestManageMachine_GetDpuMachinesByIDs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock nico atomic client with our custom nico implementation
-			baseAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-			baseClient := cClient.NewMockCoreGrpcClient()
+			baseAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+			baseClient := cClient.NewMockNICoClient()
 			baseAtomicClient.SwapClient(baseClient)
 
 			mm := &testManageMachineWithMock{
 				ManageMachine: ManageMachine{
-					coreGrpcAtomicClient: baseAtomicClient,
+					nicoCoreAtomicClient: baseAtomicClient,
 				},
 				mockFindMachines: mockFindMachinesByIds,
 				mockGetNetwork:   mockGetNetworkConfig,

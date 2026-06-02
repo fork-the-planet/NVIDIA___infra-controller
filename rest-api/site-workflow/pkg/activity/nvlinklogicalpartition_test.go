@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -16,10 +30,10 @@ import (
 )
 
 func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -27,7 +41,7 @@ func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInv
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -45,7 +59,7 @@ func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInv
 			name: "test collecting and publishing nvlink logical partition inventory, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -58,7 +72,7 @@ func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInv
 			name: "test collecting and publishing nvlink logical partition inventory, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -78,7 +92,7 @@ func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInv
 
 			manageInstance := NewManageNVLinkLogicalPartitionInventory(ManageInventoryConfig{
 				SiteID:                tt.fields.siteID,
-				CoreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				NICoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				TemporalPublishClient: tc,
 				TemporalPublishQueue:  tt.fields.temporalPublishQueue,
 				SitePageSize:          tt.fields.sitePageSize,
@@ -125,13 +139,13 @@ func TestManageNVLinkLogicalPartitionInventory_DiscoverNVLinkLogicalPartitionInv
 }
 
 func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -146,7 +160,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -165,7 +179,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -184,7 +198,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition fail on missing name",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -203,7 +217,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition fail on missing org",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -222,7 +236,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -233,7 +247,7 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mnvllp := NewManageNVLinkLogicalPartition(tt.fields.coreGrpcAtomicClient)
+			mnvllp := NewManageNVLinkLogicalPartition(tt.fields.nicoCoreAtomicClient)
 			nvLinkLogicalPartition, err := mnvllp.CreateNVLinkLogicalPartitionOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -251,13 +265,13 @@ func TestManageNVLinkLogicalPartition_CreateNVLinkLogicalPartitionOnSite(t *test
 }
 
 func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -272,7 +286,7 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test update nvlink logical partition success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -290,7 +304,7 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test update nvlink logical partition fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -308,7 +322,7 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test create nvlink logical partition fail on missing name",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -326,7 +340,7 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test update nvlink logical partition fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -337,7 +351,7 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mnvllp := NewManageNVLinkLogicalPartition(tt.fields.coreGrpcAtomicClient)
+			mnvllp := NewManageNVLinkLogicalPartition(tt.fields.nicoCoreAtomicClient)
 			err := mnvllp.UpdateNVLinkLogicalPartitionOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -349,13 +363,13 @@ func TestManageNVLinkLogicalPartition_UpdateNVLinkLogicalPartitionOnSite(t *test
 }
 
 func TestManageNVLinkLogicalPartition_DeleteNVLinkLogicalPartitionOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -370,7 +384,7 @@ func TestManageNVLinkLogicalPartition_DeleteNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test delete nvlink logical partition success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -383,7 +397,7 @@ func TestManageNVLinkLogicalPartition_DeleteNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test delete nvlink logical partition fail on blank id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -396,7 +410,7 @@ func TestManageNVLinkLogicalPartition_DeleteNVLinkLogicalPartitionOnSite(t *test
 		{
 			name: "test delete nvlink logical partition fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -407,7 +421,7 @@ func TestManageNVLinkLogicalPartition_DeleteNVLinkLogicalPartitionOnSite(t *test
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageNVLinkLogicalPartition(tt.fields.coreGrpcAtomicClient)
+			mm := NewManageNVLinkLogicalPartition(tt.fields.NICoCoreAtomicClient)
 			err := mm.DeleteNVLinkLogicalPartitionOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)

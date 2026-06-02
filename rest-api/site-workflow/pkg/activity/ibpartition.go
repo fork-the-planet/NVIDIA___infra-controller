@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -9,8 +23,8 @@ import (
 	"time"
 
 	swe "github.com/NVIDIA/infra-controller-rest/site-workflow/pkg/error"
+	"github.com/NVIDIA/infra-controller-rest/site-workflow/pkg/grpc/client"
 	cClient "github.com/NVIDIA/infra-controller-rest/site-workflow/pkg/grpc/client"
-	cclient "github.com/NVIDIA/infra-controller-rest/site-workflow/pkg/grpc/client"
 	cwssaws "github.com/NVIDIA/infra-controller-rest/workflow-schema/schema/site-agent/workflows/v1"
 	"github.com/rs/zerolog/log"
 	"go.temporal.io/sdk/temporal"
@@ -43,18 +57,16 @@ func NewManageInfiniBandPartitionInventory(config ManageInventoryConfig) ManageI
 	}
 }
 
-func ibpFindIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient) ([]*cwssaws.IBPartitionId, error) {
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-	idList, err := grpcServiceClient.FindIBPartitionIds(ctx, &cwssaws.IBPartitionSearchFilter{})
+func ibpFindIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient) ([]*cwssaws.IBPartitionId, error) {
+	idList, err := nicoClient.NICo().FindIBPartitionIds(ctx, &cwssaws.IBPartitionSearchFilter{})
 	if err != nil {
 		return nil, err
 	}
 	return idList.GetIbPartitionIds(), nil
 }
 
-func ibpFindByIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient, ids []*cwssaws.IBPartitionId) ([]*cwssaws.IBPartition, error) {
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-	list, err := grpcServiceClient.FindIBPartitionsByIds(ctx, &cwssaws.IBPartitionsByIdsRequest{
+func ibpFindByIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient, ids []*cwssaws.IBPartitionId) ([]*cwssaws.IBPartition, error) {
+	list, err := nicoClient.NICo().FindIBPartitionsByIds(ctx, &cwssaws.IBPartitionsByIdsRequest{
 		IbPartitionIds: ids,
 	})
 	if err != nil {
@@ -87,13 +99,13 @@ func ibpPagedInventory(allItemIDs []*cwssaws.IBPartitionId, pagedItems []*cwssaw
 
 // ManageInfiniBandPartition is an activity wrapper for InfiniBand Partition management
 type ManageInfiniBandPartition struct {
-	coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+	NICoCoreAtomicClient *client.NICoCoreAtomicClient
 }
 
 // NewManageInfiniBandPartition returns a new ManageInfiniBandPartition client
-func NewManageInfiniBandPartition(coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient) ManageInfiniBandPartition {
+func NewManageInfiniBandPartition(nicoClient *client.NICoCoreAtomicClient) ManageInfiniBandPartition {
 	return ManageInfiniBandPartition{
-		coreGrpcAtomicClient: coreGrpcAtomicClient,
+		NICoCoreAtomicClient: nicoClient,
 	}
 }
 
@@ -123,17 +135,17 @@ func (mibp *ManageInfiniBandPartition) CreateInfiniBandPartitionOnSite(ctx conte
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mibp.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cclient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mibp.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return client.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	// Call Core gRPC endpoint
-	_, err = grpcServiceClient.CreateIBPartition(ctx, request)
+	// Call NICo gRPC endpoint
+	_, err = rpcClient.CreateIBPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to create InfiniBand Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to create InfiniBand Partition using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -162,15 +174,15 @@ func (mibp *ManageInfiniBandPartition) UpdateInfiniBandPartitionOnSite(ctx conte
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	grpcClient := mibp.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	nicoClient := mibp.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return client.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.UpdateIBPartition(ctx, request)
+	_, err = rpcClient.UpdateIBPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to update InfiniBand Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to update InfiniBand Partition using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -198,16 +210,16 @@ func (mipb *ManageInfiniBandPartition) DeleteInfiniBandPartitionOnSite(ctx conte
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mipb.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mipb.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return client.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.DeleteIBPartition(ctx, request)
+	_, err = rpcClient.DeleteIBPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to delete InfiniBand Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to delete InfiniBand Partition using Site Controller API")
 		return swe.WrapErr(err)
 	}
 

@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package managers
 
@@ -15,26 +29,25 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/bootstrap"
-	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/coregrpc"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/dpuextensionservice"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/expectedmachine"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/expectedpowershelf"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/expectedrack"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/expectedswitch"
-	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/flowgrpc"
+	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/flow"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/infinibandpartition"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/instance"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/instancetype"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/machine"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/managerapi"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/networksecuritygroup"
+	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/nico"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/nvlinklogicalpartition"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/operatingsystem"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/sku"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/sshkeygroup"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/subnet"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/tenant"
-	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/tenantidentity"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/vpc"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/vpcpeering"
 	"github.com/NVIDIA/infra-controller-rest/site-agent/pkg/components/managers/vpcprefix"
@@ -47,7 +60,7 @@ import (
 
 // NewAPIHandlers - handle new api
 func NewAPIHandlers() {
-	managerapi.ManagerHandler = managerapi.ManagerAPI{
+	managerapi.ManagerHdl = managerapi.ManagerAPI{
 		// Add all the Managers here
 		Orchestrator:           &workflow.API{},
 		VPC:                    &vpc.API{},
@@ -56,7 +69,7 @@ func NewAPIHandlers() {
 		Subnet:                 &subnet.API{},
 		Instance:               &instance.API{},
 		Machine:                &machine.API{},
-		CoreGrpc:               &coregrpc.API{},
+		NICo:                   &nico.API{},
 		Bootstrap:              &bootstrap.BoostrapAPI{},
 		SSHKeyGroup:            &sshkeygroup.API{},
 		InfiniBandPartition:    &infinibandpartition.API{},
@@ -72,19 +85,18 @@ func NewAPIHandlers() {
 		SKU:                    &sku.API{},
 		DpuExtensionService:    &dpuextensionservice.API{},
 		NVLinkLogicalPartition: &nvlinklogicalpartition.API{},
-		FlowGrpc:               &flowgrpc.API{},
-		TenantIdentity:         &tenantidentity.API{},
+		Flow:                   &flow.API{},
 	}
 }
 
-// NewInstance - new instance with the parent data structure
+// NewInstance - new instance with the parent datastruct
 func NewInstance(superforge *elektratypes.Elektra) (*Manager, error) {
 	NewAPIHandlers()
 	ManagerAccess = &Manager{
 		Data: &managerapi.ManagerData{
 			EB: superforge,
 		},
-		API: &managerapi.ManagerHandler,
+		API: &managerapi.ManagerHdl,
 		Conf: &managerapi.ManagerConf{
 			EB: superforge.Conf,
 		},
@@ -101,7 +113,7 @@ func (Managers *Manager) NewInstance() {
 	Managers.VpcPrefix()
 	Managers.Subnet()
 	Managers.Instance()
-	Managers.CoreGrpc()
+	Managers.NICo()
 	Managers.Machine()
 	Managers.Bootstrap()
 	Managers.SSHKeyGroup()
@@ -118,12 +130,11 @@ func (Managers *Manager) NewInstance() {
 	Managers.SKU()
 	Managers.DpuExtensionService()
 	Managers.NVLinkLogicalPartition()
-	Managers.FlowGrpc()
+	Managers.Flow()
 	Managers.VpcPeering()
-	Managers.TenantIdentity()
 }
 
-// Init - initialize all managers
+// Init - initialize all the mgrs
 func (Managers *Manager) Init() {
 	ManagerAccess.Data.EB.Log.Info().Msg("Managers: Initializing all the managers")
 	// register version metric (build_version, build_date)
@@ -148,7 +159,7 @@ func (Managers *Manager) Init() {
 	ManagerAccess.Data.EB.HealthStatus.Store(uint64(computils.CompUnhealthy))
 
 	Managers.Orchestrator().Init()
-	Managers.CoreGrpc().Init()
+	Managers.NICo().Init()
 	Managers.Bootstrap().Init()
 	Managers.VPC().Init()
 	Managers.VpcPrefix().Init()
@@ -168,20 +179,19 @@ func (Managers *Manager) Init() {
 	Managers.SKU().Init()
 	Managers.DpuExtensionService().Init()
 	Managers.NVLinkLogicalPartition().Init()
-	Managers.FlowGrpc().Init()
+	Managers.Flow().Init()
 	Managers.VpcPeering().Init()
-	Managers.TenantIdentity().Init()
 }
 
-// Start - start all managers
+// Start - start the mgrs
 func (Managers *Manager) Start() {
 	go StartMetricServer()
 	StartHTTPServer()
 	ManagerAccess.Data.EB.Log.Info().Msg("Managers: Starting all the managers")
-	Managers.CoreGrpc().Start()
+	Managers.NICo().Start()
 	Managers.Bootstrap().Start()
 	Managers.Orchestrator().Start()
-	Managers.FlowGrpc().Start()
+	Managers.Flow().Start()
 }
 
 // StartMetricServer - Start serving Metric Server

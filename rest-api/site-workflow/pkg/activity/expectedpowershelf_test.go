@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -17,10 +31,10 @@ import (
 )
 
 func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -28,7 +42,7 @@ func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -45,7 +59,7 @@ func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t
 			name: "test collecting and publishing expected power shelf inventory, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -58,7 +72,7 @@ func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t
 			name: "test collecting and publishing expected power shelf inventory, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -78,7 +92,7 @@ func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t
 
 			manageInstance := NewManageExpectedPowerShelfInventory(
 				tt.fields.siteID,
-				tt.fields.coreGrpcAtomicClient,
+				tt.fields.nicoCoreAtomicClient,
 				tc,
 				tt.fields.temporalPublishQueue,
 				tt.fields.cloudPageSize,
@@ -121,13 +135,13 @@ func TestManageExpectedPowerShelfInventory_DiscoverExpectedPowerShelfInventory(t
 }
 
 func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -142,7 +156,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -157,7 +171,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf fail on missing MAC address",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -172,7 +186,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf fail on missing serial number",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -187,7 +201,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -202,7 +216,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf fail on missing identifying information",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -217,7 +231,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test create expected power shelf fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -228,7 +242,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageExpectedPowerShelf(tt.fields.coreGrpcAtomicClient, nil)
+			mm := NewManageExpectedPowerShelf(tt.fields.NICoCoreAtomicClient, nil)
 			err := mm.CreateExpectedPowerShelfOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -240,13 +254,13 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnSite(t *testing.T) {
 }
 
 func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -261,7 +275,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -276,7 +290,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -291,7 +305,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf fail on missing MAC address",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -306,7 +320,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf fail on missing serial number",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -321,7 +335,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf fail on missing both MAC and serial",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -336,7 +350,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test update expected power shelf fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -347,7 +361,7 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageExpectedPowerShelf(tt.fields.coreGrpcAtomicClient, nil)
+			mm := NewManageExpectedPowerShelf(tt.fields.NICoCoreAtomicClient, nil)
 			err := mm.UpdateExpectedPowerShelfOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -359,13 +373,13 @@ func TestManageExpectedPowerShelf_UpdateExpectedPowerShelfOnSite(t *testing.T) {
 }
 
 func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -380,7 +394,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test delete expected power shelf success",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -394,7 +408,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test delete expected power shelf fail on missing id",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -408,7 +422,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test delete expected power shelf success with missing BMC MAC address",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -422,7 +436,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 		{
 			name: "test delete expected power shelf fail on missing request",
 			fields: fields{
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -433,7 +447,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageExpectedPowerShelf(tt.fields.coreGrpcAtomicClient, nil)
+			mm := NewManageExpectedPowerShelf(tt.fields.NICoCoreAtomicClient, nil)
 			err := mm.DeleteExpectedPowerShelfOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -446,7 +460,7 @@ func TestManageExpectedPowerShelf_DeleteExpectedPowerShelfOnSite(t *testing.T) {
 
 func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnFlow(t *testing.T) {
 	t.Run("nil Flow client skips gracefully", func(t *testing.T) {
-		mm := ManageExpectedPowerShelf{flowGrpcAtomicClient: nil}
+		mm := ManageExpectedPowerShelf{FlowAtomicClient: nil}
 		err := mm.CreateExpectedPowerShelfOnFlow(context.Background(), &cwssaws.ExpectedPowerShelf{
 			ExpectedPowerShelfId: &cwssaws.UUID{Value: uuid.NewString()}, BmcMacAddress: "00:11:22:33:44:55", ShelfSerialNumber: "SHELF001",
 		})
@@ -454,7 +468,7 @@ func TestManageExpectedPowerShelf_CreateExpectedPowerShelfOnFlow(t *testing.T) {
 	})
 
 	t.Run("nil Flow client connection skips gracefully", func(t *testing.T) {
-		mm := ManageExpectedPowerShelf{flowGrpcAtomicClient: cClient.NewFlowGrpcAtomicClient(&cClient.FlowGrpcClientConfig{})}
+		mm := ManageExpectedPowerShelf{FlowAtomicClient: cClient.NewFlowAtomicClient(&cClient.FlowClientConfig{})}
 		err := mm.CreateExpectedPowerShelfOnFlow(context.Background(), &cwssaws.ExpectedPowerShelf{
 			ExpectedPowerShelfId: &cwssaws.UUID{Value: uuid.NewString()}, BmcMacAddress: "00:11:22:33:44:55", ShelfSerialNumber: "SHELF001",
 		})

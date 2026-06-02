@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -42,9 +56,8 @@ func NewManageNVLinkLogicalPartitionInventory(config ManageInventoryConfig) Mana
 	}
 }
 
-func nvllpFindIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient) ([]*cwssaws.NVLinkLogicalPartitionId, error) {
-	grpcServiceClient := grpcClient.GrpcServiceClient()
-	resp, err := grpcServiceClient.FindNVLinkLogicalPartitionIds(ctx, &cwssaws.NVLinkLogicalPartitionSearchFilter{})
+func nvllpFindIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient) ([]*cwssaws.NVLinkLogicalPartitionId, error) {
+	resp, err := nicoClient.NICo().FindNVLinkLogicalPartitionIds(ctx, &cwssaws.NVLinkLogicalPartitionSearchFilter{})
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +68,11 @@ func nvllpFindIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient) ([]*c
 	return ids, nil
 }
 
-func nvllpFindByIDs(ctx context.Context, grpcClient *cClient.CoreGrpcClient, ids []*cwssaws.NVLinkLogicalPartitionId) ([]*cwssaws.NVLinkLogicalPartition, error) {
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+func nvllpFindByIDs(ctx context.Context, nicoClient *cClient.NICoCoreClient, ids []*cwssaws.NVLinkLogicalPartitionId) ([]*cwssaws.NVLinkLogicalPartition, error) {
 	req := &cwssaws.NVLinkLogicalPartitionsByIdsRequest{
 		PartitionIds: ids,
 	}
-	resp, err := grpcServiceClient.FindNVLinkLogicalPartitionsByIds(ctx, req)
+	resp, err := nicoClient.NICo().FindNVLinkLogicalPartitionsByIds(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -93,13 +105,13 @@ func nvllpPagedInventory(allItemIDs []*cwssaws.NVLinkLogicalPartitionId, pagedIt
 
 // ManageNVLinkLogicalPartition is an activity wrapper for NVLinkLogical Partition management
 type ManageNVLinkLogicalPartition struct {
-	coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+	NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 }
 
 // NewManageNVLinkLogicalPartition returns a new ManageNVLinkLogicalPartition client
-func NewManageNVLinkLogicalPartition(coreGrpcClient *cClient.CoreGrpcAtomicClient) ManageNVLinkLogicalPartition {
+func NewManageNVLinkLogicalPartition(nicoClient *cClient.NICoCoreAtomicClient) ManageNVLinkLogicalPartition {
 	return ManageNVLinkLogicalPartition{
-		coreGrpcAtomicClient: coreGrpcClient,
+		NICoCoreAtomicClient: nicoClient,
 	}
 }
 
@@ -130,17 +142,17 @@ func (mnvllp *ManageNVLinkLogicalPartition) CreateNVLinkLogicalPartitionOnSite(c
 		return nil, temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mnvllp.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return nil, cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mnvllp.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return nil, cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	// Call Core gRPC endpoint
-	nvLinkLogicalPartition, err := grpcServiceClient.CreateNVLinkLogicalPartition(ctx, request)
+	// Call NICo gRPC endpoint
+	nvLinkLogicalPartition, err := rpcClient.CreateNVLinkLogicalPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to create NVLink Logical Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to create NVLink Logical Partition using Site Controller API")
 		return nil, swe.WrapErr(err)
 	}
 
@@ -173,17 +185,17 @@ func (mnvllp *ManageNVLinkLogicalPartition) UpdateNVLinkLogicalPartitionOnSite(c
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mnvllp.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mnvllp.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	// Call Core gRPC endpoint
-	_, err = grpcServiceClient.UpdateNVLinkLogicalPartition(ctx, request)
+	// Call NICo gRPC endpoint
+	_, err = rpcClient.UpdateNVLinkLogicalPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to update NVLink Logical Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to update NVLink Logical Partition using Site Controller API")
 		return swe.WrapErr(err)
 	}
 
@@ -211,16 +223,16 @@ func (mnvllp *ManageNVLinkLogicalPartition) DeleteNVLinkLogicalPartitionOnSite(c
 		return temporal.NewNonRetryableApplicationError(err.Error(), swe.ErrTypeInvalidRequest, err)
 	}
 
-	// Call Core gRPC API endpoint
-	grpcClient := mnvllp.coreGrpcAtomicClient.GetClient()
-	if grpcClient == nil {
-		return cClient.ErrCoreGrpcClientNotConnected
+	// Call Site Controller gRPC endpoint
+	nicoClient := mnvllp.NICoCoreAtomicClient.GetClient()
+	if nicoClient == nil {
+		return cClient.ErrClientNotConnected
 	}
-	grpcServiceClient := grpcClient.GrpcServiceClient()
+	rpcClient := nicoClient.NICo()
 
-	_, err = grpcServiceClient.DeleteNVLinkLogicalPartition(ctx, request)
+	_, err = rpcClient.DeleteNVLinkLogicalPartition(ctx, request)
 	if err != nil {
-		logger.Warn().Err(err).Msg("Failed to delete NVLink Logical Partition using Core gRPC API")
+		logger.Warn().Err(err).Msg("Failed to delete NVLink Logical Partition using Site Controller API")
 		return swe.WrapErr(err)
 	}
 

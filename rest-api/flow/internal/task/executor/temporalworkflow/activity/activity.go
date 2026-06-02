@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -9,6 +23,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/executor/temporalworkflow/common"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/operations"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/task"
@@ -22,7 +37,6 @@ const (
 	NamePowerControl              = "PowerControl"
 	NameGetPowerStatus            = "GetPowerStatus"
 	NameUpdateTaskStatus          = "UpdateTaskStatus"
-	NameUpdateTaskReport          = "UpdateTaskReport"
 	NameFirmwareControl           = "FirmwareControl"
 	NameGetFirmwareStatus         = "GetFirmwareStatus"
 	NameBringUpControl            = "BringUpControl"
@@ -37,12 +51,12 @@ func (a *Activities) InjectExpectation(
 	target common.Target,
 	info operations.InjectExpectationTaskInfo,
 ) error {
-	injector, err := requireExpectationInjector(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return err
 	}
 
-	return injector.InjectExpectation(ctx, target, info)
+	return cm.InjectExpectation(ctx, target, info)
 }
 
 // PowerControl is a Temporal activity that applies a power state transition
@@ -52,12 +66,12 @@ func (a *Activities) PowerControl(
 	target common.Target,
 	info operations.PowerControlTaskInfo,
 ) error {
-	controller, err := requirePowerController(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return err
 	}
 
-	return controller.PowerControl(ctx, target, info)
+	return cm.PowerControl(ctx, target, info)
 }
 
 // GetPowerStatus is a Temporal activity that queries current power states for
@@ -66,12 +80,12 @@ func (a *Activities) GetPowerStatus(
 	ctx context.Context,
 	target common.Target,
 ) (map[string]operations.PowerStatus, error) {
-	reader, err := requirePowerStatusReader(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return nil, err
 	}
 
-	return reader.GetPowerStatus(ctx, target)
+	return cm.GetPowerStatus(ctx, target)
 }
 
 // UpdateTaskStatus is a Temporal activity that updates task status by ID.
@@ -90,23 +104,6 @@ func (a *Activities) UpdateTaskStatus(
 	return a.updater.UpdateTaskStatus(ctx, arg)
 }
 
-// UpdateTaskReport is a Temporal activity that merges a structured report
-// snapshot without changing status or message.
-func (a *Activities) UpdateTaskReport(
-	ctx context.Context,
-	arg *task.TaskReportUpdate,
-) error {
-	if a.reportUpdater == nil {
-		return fmt.Errorf("task report updater is not configured")
-	}
-
-	if arg == nil || arg.ID == uuid.Nil {
-		return fmt.Errorf("invalid task identifier")
-	}
-
-	return a.reportUpdater.UpdateTaskReport(ctx, arg)
-}
-
 // FirmwareControl initiates firmware update without waiting for completion.
 // This activity returns immediately after the update request is accepted.
 func (a *Activities) FirmwareControl(
@@ -114,12 +111,12 @@ func (a *Activities) FirmwareControl(
 	target common.Target,
 	info operations.FirmwareControlTaskInfo,
 ) error {
-	controller, err := requireFirmwareController(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return err
 	}
 
-	return controller.FirmwareControl(ctx, target, info)
+	return cm.FirmwareControl(ctx, target, info)
 }
 
 // GetFirmwareStatusResult is the result of GetFirmwareStatus activity.
@@ -134,12 +131,12 @@ func (a *Activities) GetFirmwareStatus(
 	ctx context.Context,
 	target common.Target,
 ) (*GetFirmwareStatusResult, error) {
-	reader, err := requireFirmwareStatusReader(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return nil, err
 	}
 
-	statuses, err := reader.GetFirmwareStatus(ctx, target)
+	statuses, err := cm.GetFirmwareStatus(ctx, target)
 	if err != nil {
 		return nil, err
 	}
@@ -152,12 +149,17 @@ func (a *Activities) BringUpControl(
 	ctx context.Context,
 	target common.Target,
 ) error {
-	controller, err := requireBringUpController(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return err
 	}
 
-	return controller.BringUpControl(ctx, target)
+	buc, ok := cm.(componentmanager.BringUpController)
+	if !ok {
+		return fmt.Errorf("component manager for %s does not support BringUpControl", target.Type)
+	}
+
+	return buc.BringUpControl(ctx, target)
 }
 
 // GetBringUpStatusResult is the result of GetBringUpStatus activity.
@@ -171,12 +173,17 @@ func (a *Activities) GetBringUpStatus(
 	ctx context.Context,
 	target common.Target,
 ) (*GetBringUpStatusResult, error) {
-	reader, err := requireBringUpStatusReader(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return nil, err
 	}
 
-	states, err := reader.GetBringUpStatus(ctx, target)
+	buc, ok := cm.(componentmanager.BringUpController)
+	if !ok {
+		return nil, fmt.Errorf("component manager for %s does not support GetBringUpStatus", target.Type)
+	}
+
+	states, err := buc.GetBringUpStatus(ctx, target)
 	if err != nil {
 		return nil, err
 	}
@@ -191,10 +198,29 @@ func (a *Activities) VerifyFirmwareConsistency(
 	ctx context.Context,
 	target common.Target,
 ) error {
-	checker, err := requireFirmwareConsistencyChecker(a.registry, target)
+	cm, err := a.validAndGetComponentManager(target)
 	if err != nil {
 		return err
 	}
 
+	checker, ok := cm.(componentmanager.FirmwareConsistencyChecker)
+	if !ok {
+		return fmt.Errorf("component manager for %s does not support firmware consistency check",
+			target.Type)
+	}
+
 	return checker.VerifyFirmwareConsistency(ctx, target)
+}
+
+// validAndGetComponentManager validates the target and returns the component
+// manager registered for its type. Returns an error if the target is invalid
+// or no manager is found.
+func (a *Activities) validAndGetComponentManager(
+	target common.Target,
+) (componentmanager.ComponentManager, error) {
+	if err := target.Validate(); err != nil {
+		return nil, fmt.Errorf("target is invalid: %w", err)
+	}
+
+	return a.registry.GetManager(target.Type)
 }

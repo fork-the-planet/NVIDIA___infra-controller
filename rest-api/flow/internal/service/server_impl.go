@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 // Package service implements the gRPC server for NICo Flow, the rack-level asset management system.
 // It provides APIs for managing rack-level assets including creating, retrieving, and updating
@@ -187,10 +201,7 @@ func (rs *FlowServerImpl) PatchRack(
 	}, err
 }
 
-// AddComponent creates a single component. The component may optionally be
-// attached to an existing rack via component.rack_id; if rack_id is not set
-// the component is ingested without a rack assignment and can be moved into a
-// rack later via PatchComponent.
+// AddComponent creates a single component under an existing rack.
 func (rs *FlowServerImpl) AddComponent(
 	ctx context.Context,
 	req *pb.AddComponentRequest,
@@ -200,16 +211,16 @@ func (rs *FlowServerImpl) AddComponent(
 		return nil, errors.New("component is required")
 	}
 
-	// Convert proto component to internal; rack_id comes from the component
-	// itself and is optional.
+	// Convert proto component to internal; rack_id comes from the component itself
 	comp := protobuf.ComponentFrom(pbComp)
 	comp.RackID = protobuf.UUIDFrom(pbComp.GetRackId())
+	if comp.RackID == uuid.Nil {
+		return nil, errors.New("component.rack_id is required")
+	}
 
-	// Verify the rack exists only when one has been specified.
-	if comp.RackID != uuid.Nil {
-		if _, err := rs.inventoryManager.GetRackByID(ctx, comp.RackID, false); err != nil {
-			return nil, fmt.Errorf("rack not found: %w", err)
-		}
+	// Verify the rack exists
+	if _, err := rs.inventoryManager.GetRackByID(ctx, comp.RackID, false); err != nil {
+		return nil, fmt.Errorf("rack not found: %w", err)
 	}
 
 	// Ensure the component has an ID
@@ -340,9 +351,6 @@ func (rs *FlowServerImpl) PatchComponent(
 	if req.RackId != nil {
 		rackID := protobuf.UUIDFrom(req.RackId)
 		if rackID != uuid.Nil {
-			if _, err := rs.inventoryManager.GetRackByID(ctx, rackID, false); err != nil {
-				return nil, fmt.Errorf("rack not found: %w", err)
-			}
 			existing.RackID = rackID
 		}
 	}
@@ -394,9 +402,8 @@ func (rs *FlowServerImpl) GetComponentInfoByID(
 
 	var r *rack.Rack
 
-	if req.GetWithRack() && c.RackID != uuid.Nil {
-		// Get the rack information; skip the lookup when the component is
-		// not yet attached to a rack.
+	if req.GetWithRack() {
+		// Get the rack information
 		r, err = rs.inventoryManager.GetRackByID(ctx, c.RackID, false)
 		if err != nil {
 			return nil, err
@@ -438,9 +445,8 @@ func (rs *FlowServerImpl) GetComponentInfoBySerial(
 
 	var r *rack.Rack
 
-	if req.GetWithRack() && c.RackID != uuid.Nil {
-		// Get the rack information; skip the lookup when the component is
-		// not yet attached to a rack.
+	if req.GetWithRack() {
+		// Get the rack information
 		r, err = rs.inventoryManager.GetRackByID(ctx, c.RackID, false)
 		if err != nil {
 			return nil, err
@@ -862,10 +868,9 @@ func (rs *FlowServerImpl) ListTasks(
 	req *pb.ListTasksRequest,
 ) (*pb.ListTasksResponse, error) {
 	options := &taskcommon.TaskListOptions{
-		TaskType:    taskcommon.TaskTypeUnknown,
-		RackID:      protobuf.UUIDFrom(req.GetRackId()),
-		ComponentID: protobuf.UUIDFrom(req.GetComponentId()),
-		ActiveOnly:  req.GetActiveOnly(),
+		TaskType:   taskcommon.TaskTypeUnknown,
+		RackID:     protobuf.UUIDFrom(req.GetRackId()),
+		ActiveOnly: req.GetActiveOnly(),
 	}
 
 	pagination := protobuf.PaginationFrom(req.GetPagination())
@@ -1236,7 +1241,6 @@ func (rs *FlowServerImpl) UpgradeFirmware(
 		Operation:     operations.FirmwareOperationUpgrade,
 		TargetVersion: req.GetTargetVersion(),
 		RuleID:        protobuf.UUIDStringFrom(req.GetRuleId()),
-		SubTargets:    req.GetSubTargets(),
 	}
 
 	// Parse optional time parameters for scheduled upgrade
@@ -1529,7 +1533,7 @@ func (rs *FlowServerImpl) ValidateComponents(
 
 	// Convert store drifts to proto response
 	var diffs []*pb.ComponentDiff
-	var missingCount, unexpectedCount, mismatchCount, matchCount int32
+	var missingCount, unexpectedCount, driftCount, matchCount int32
 
 	for _, sd := range storeDrifts {
 		var compUUID *pb.UUID
@@ -1565,18 +1569,18 @@ func (rs *FlowServerImpl) ValidateComponents(
 				})
 			}
 			diffs = append(diffs, &pb.ComponentDiff{
-				Type:        pb.DiffType_DIFF_TYPE_MISMATCH,
+				Type:        pb.DiffType_DIFF_TYPE_DRIFT,
 				Id:          compUUID,
 				ComponentId: componentID,
 				FieldDiffs:  fieldDiffs,
 			})
-			mismatchCount++
+			driftCount++
 		}
 	}
 
-	// Calculate match count: if we have targeted components, matches = targeted - mismatches
+	// Calculate match count: if we have targeted components, matches = targeted - drifts
 	if targetSpec != nil {
-		matchCount = filteredComponentCount - missingCount - mismatchCount
+		matchCount = filteredComponentCount - missingCount - driftCount
 		if matchCount < 0 {
 			matchCount = 0
 		}
@@ -1599,7 +1603,7 @@ func (rs *FlowServerImpl) ValidateComponents(
 		TotalDiffs:      totalDiffs,
 		MissingCount:    missingCount,
 		UnexpectedCount: unexpectedCount,
-		MismatchCount:   mismatchCount,
+		DriftCount:      driftCount,
 		MatchCount:      matchCount,
 	}, nil
 }

@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package cli
 
@@ -32,14 +46,12 @@ func LoginCommand() *cli.Command {
 		Usage: "Authenticate and save the token",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "username",
-				Usage:   "Username for OIDC password grant",
-				EnvVars: []string{"NICO_OIDC_USERNAME"},
+				Name:  "username",
+				Usage: "Username for OIDC password grant",
 			},
 			&cli.StringFlag{
-				Name:    "password",
-				Usage:   "Password for OIDC password grant (prompted if not provided)",
-				EnvVars: []string{"NICO_OIDC_PASSWORD"},
+				Name:  "password",
+				Usage: "Password for OIDC password grant (prompted if not provided)",
 			},
 			&cli.StringFlag{
 				Name:    "client-secret",
@@ -59,7 +71,6 @@ func LoginCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			cfg, _ := LoadConfig()
-			ApplyEnvOverrides(cfg)
 
 			tokenCommand := c.String("token-command")
 			if tokenCommand != "" {

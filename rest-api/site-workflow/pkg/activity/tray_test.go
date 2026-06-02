@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -83,7 +97,7 @@ func TestManageTray_GetTray(t *testing.T) {
 			},
 			mockResp: &flowv1.GetComponentInfoResponse{
 				Component: &flowv1.Component{
-					Type: flowv1.ComponentType_COMPONENT_TYPE_NVSWITCH,
+					Type: flowv1.ComponentType_COMPONENT_TYPE_NVLSWITCH,
 					Info: &flowv1.DeviceInfo{
 						Id:   &flowv1.UUID{Id: "switch-tray-id"},
 						Name: "NVSwitch Tray",
@@ -108,14 +122,14 @@ func TestManageTray_GetTray(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock Flow client
-			mockFlowGrpcClient := cClient.NewMockFlowGrpcClient()
+			mockFlowClient := cClient.NewMockFlowClient()
 
 			// Create atomic client and swap with mock
-			flowGrpcAtomicClient := cClient.NewFlowGrpcAtomicClient(&cClient.FlowGrpcClientConfig{})
-			flowGrpcAtomicClient.SwapClient(mockFlowGrpcClient)
+			flowAtomicClient := cClient.NewFlowAtomicClient(&cClient.FlowClientConfig{})
+			flowAtomicClient.SwapClient(mockFlowClient)
 
 			// Create ManageTray instance
-			manageTray := NewManageTray(flowGrpcAtomicClient)
+			manageTray := NewManageTray(flowAtomicClient)
 
 			// Execute activity with context injection
 			ctx := context.Background()
@@ -188,7 +202,7 @@ func TestManageTray_GetTrays(t *testing.T) {
 						},
 					},
 					{
-						Type: flowv1.ComponentType_COMPONENT_TYPE_NVSWITCH,
+						Type: flowv1.ComponentType_COMPONENT_TYPE_NVLSWITCH,
 						Info: &flowv1.DeviceInfo{
 							Id:   &flowv1.UUID{Id: "tray-2"},
 							Name: "Switch Tray 1",
@@ -262,14 +276,14 @@ func TestManageTray_GetTrays(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock Flow client
-			mockFlowGrpcClient := cClient.NewMockFlowGrpcClient()
+			mockFlowClient := cClient.NewMockFlowClient()
 
 			// Create atomic client and swap with mock
-			flowGrpcAtomicClient := cClient.NewFlowGrpcAtomicClient(&cClient.FlowGrpcClientConfig{})
-			flowGrpcAtomicClient.SwapClient(mockFlowGrpcClient)
+			flowAtomicClient := cClient.NewFlowAtomicClient(&cClient.FlowClientConfig{})
+			flowAtomicClient.SwapClient(mockFlowClient)
 
 			// Create ManageTray instance
-			manageTray := NewManageTray(flowGrpcAtomicClient)
+			manageTray := NewManageTray(flowAtomicClient)
 
 			// Execute activity with context injection
 			ctx := context.Background()
@@ -299,11 +313,11 @@ func TestManageTray_GetTrays(t *testing.T) {
 
 func TestNewManageTray(t *testing.T) {
 	// Create a mock Flow client
-	flowGrpcAtomicClient := cClient.NewFlowGrpcAtomicClient(&cClient.FlowGrpcClientConfig{})
+	flowAtomicClient := cClient.NewFlowAtomicClient(&cClient.FlowClientConfig{})
 
 	// Test constructor
-	manageTray := NewManageTray(flowGrpcAtomicClient)
+	manageTray := NewManageTray(flowAtomicClient)
 
-	assert.NotNil(t, manageTray.flowGrpcAtomicClient)
-	assert.Equal(t, flowGrpcAtomicClient, manageTray.flowGrpcAtomicClient)
+	assert.NotNil(t, manageTray.FlowAtomicClient)
+	assert.Equal(t, flowAtomicClient, manageTray.FlowAtomicClient)
 }

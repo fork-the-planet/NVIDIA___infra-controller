@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package instance
 
@@ -7,7 +21,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -251,15 +264,13 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 			// from its parent machine when an instance is allocated.
 
 			_, serr := instanceDAO.Update(ctx, nil, cdbm.InstanceUpdateInput{
-				InstanceID: instance.ID,
-				InstanceUpdateCommonInput: cdbm.InstanceUpdateCommonInput{
-					NetworkSecurityGroupID:                 controllerInstance.Config.NetworkSecurityGroupId,
-					NetworkSecurityGroupPropagationDetails: sitePropagationStatus,
-					ControllerInstanceID:                   controllerInstanceID,
-					IsUpdatePending:                        isUpdatePending,
-					IsMissingOnSite:                        isMissingOnSite,
-					TpmEkCertificate:                       controllerInstance.TpmEkCertificate,
-				},
+				InstanceID:                             instance.ID,
+				NetworkSecurityGroupID:                 controllerInstance.Config.NetworkSecurityGroupId,
+				NetworkSecurityGroupPropagationDetails: sitePropagationStatus,
+				ControllerInstanceID:                   controllerInstanceID,
+				IsUpdatePending:                        isUpdatePending,
+				IsMissingOnSite:                        isMissingOnSite,
+				TpmEkCertificate:                       controllerInstance.TpmEkCertificate,
 			})
 			if serr != nil {
 				slogger.Error().Err(serr).Msg("failed to update missing on Site flag/controller Instance ID in DB")
@@ -475,13 +486,15 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 		}
 
 		infiniBandInterfaceMap := map[string]*cdbm.InfiniBandInterface{}
-		deletingInfiniBandInterfaces := []*cdbm.InfiniBandInterface{}
+
 		for _, ibifc := range infiniBandInterfaces {
 			curIbIfc := ibifc
-			// Add the InfiniBand Interface to the list of InfiniBand Interfaces to be deleted if it is in Deleting state
+			// If the InfiniBand Interface is in Deleting state, add it into list of InfiniBand Interfaces to be deleted
 			if ibifc.Status == cdbm.InfiniBandInterfaceStatusDeleting {
-				deletingInfiniBandInterfaces = append(deletingInfiniBandInterfaces, &curIbIfc)
-				continue
+				if updatedInstanceStatus != nil && *updatedInstanceStatus == cdbm.InstanceStatusReady {
+					infiniBandInterfacesToDelete = append(infiniBandInterfacesToDelete, &curIbIfc)
+					continue
+				}
 			}
 
 			if ibifc.InfiniBandPartition.ControllerIBPartitionID == nil {
@@ -505,21 +518,8 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 			}
 		}
 
-		isInfiniBandConfigStatusEmpty := true
-		isInfiniBandConfigSynced := false
 		if controllerInstance.Config.Infiniband != nil && controllerInstance.Status.Infiniband != nil {
 			for idx, interfaceConfig := range controllerInstance.Config.Infiniband.IbInterfaces {
-
-				// If the InfiniBand Config as well as Status is not empty, set the flag to false
-				isInfiniBandConfigStatusEmpty = false
-
-				// Skip if the InfiniBand Interface Config is nil
-				if interfaceConfig == nil {
-					logger.Warn().Int("Index", idx).Msg("InfiniBand Interface Config is nil, skipping update")
-					continue
-				}
-
-				// Get the InfiniBand Interface from the map
 				ibifcKey := fmt.Sprintf("%s-%s-%d", interfaceConfig.IbPartitionId.Value, interfaceConfig.Device, interfaceConfig.DeviceInstance)
 				ibifc, ok := infiniBandInterfaceMap[ibifcKey]
 				if !ok {
@@ -528,7 +528,6 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 
 				interfaceStatus := controllerInstance.Status.Infiniband.IbInterfaces[idx]
 				if interfaceStatus != nil {
-
 					var physicalGUID *string
 					if interfaceStatus.PfGuid != nil && (ibifc.PhysicalGUID == nil || *ibifc.PhysicalGUID != *interfaceStatus.PfGuid) {
 						physicalGUID = interfaceStatus.PfGuid
@@ -541,12 +540,7 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 
 					var status *string
 					if controllerInstance.Status.Infiniband.ConfigsSynced == cwsv1.SyncState_SYNCED {
-						// If the InfiniBand Config is synced
-						isInfiniBandConfigSynced = true
-						if ibifc.Status != cdbm.InfiniBandInterfaceStatusReady {
-							// If the InfiniBand Interface is not in Ready state, set the status to Ready
-							status = cdb.GetStrPtr(cdbm.InfiniBandInterfaceStatusReady)
-						}
+						status = cdb.GetStrPtr(cdbm.InterfaceStatusReady)
 					}
 
 					if guid == nil && status == nil {
@@ -567,18 +561,6 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 						slogger.Error().Err(serr).Str("InfiniBand Interface ID", ibifc.ID.String()).Msg("failed to update InfiniBand Interface in DB")
 					}
 				}
-			}
-		}
-
-		// Determine which InfiniBand Interfaces in Deleting state can be deleted
-		if isInfiniBandConfigStatusEmpty || isInfiniBandConfigSynced {
-			for _, ibifc := range deletingInfiniBandInterfaces {
-				if util.IsTimeWithinStaleInventoryThreshold(ibifc.Updated) {
-					// If the InfiniBand Interface was modified within stale inventory threshold, defer to next inventory update
-					continue
-				}
-				// Continue with deletion
-				infiniBandInterfacesToDelete = append(infiniBandInterfacesToDelete, ibifc)
 			}
 		}
 
@@ -691,15 +673,10 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 			nvLinkInterfaceMap[nvlifcKey] = &curNvlifc
 		}
 
-		isNVLinkConfigStatusEmpty := true
-		isNVLinkConfigSynced := false
 		if controllerInstance.Config.Nvlink != nil {
 			// Check an update DB cache for each NVLink Interface based on the GPU Config and Status
 			configStatusMismatch := false
 			for idx, nvLinkGpuConfig := range controllerInstance.Config.Nvlink.GpuConfigs {
-
-				isNVLinkConfigStatusEmpty = false
-
 				if nvLinkGpuConfig == nil {
 					logger.Warn().Int("Index", idx).Msg("NVLink GPU Config is nil, skipping update")
 					continue
@@ -708,6 +685,7 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 				nvlifcKey := fmt.Sprintf("%s-%d", nvLinkGpuConfig.LogicalPartitionId.Value, nvLinkGpuConfig.DeviceInstance)
 				nvlifc, ok := nvLinkInterfaceMap[nvlifcKey]
 				if !ok {
+					logger.Warn().Str("NVLink Interface Key", nvlifcKey).Msg("NVLink Interface does not exist in DB, possibly created directly on Site")
 					continue
 				}
 
@@ -755,15 +733,9 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 				}
 
 				var status *string
-				if controllerInstance.Status.Nvlink.ConfigsSynced == cwsv1.SyncState_SYNCED {
-					isNVLinkConfigSynced = true
-
-					// If the NVLink Interface is not in Ready state, set the status to Ready
-					if nvlifc.Status != cdbm.NVLinkInterfaceStatusReady {
-						status = cdb.GetStrPtr(cdbm.NVLinkInterfaceStatusReady)
-						needsUpdate = true
-					}
-
+				if controllerInstance.Status.Nvlink.ConfigsSynced == cwsv1.SyncState_SYNCED && nvlifc.Status != cdbm.NVLinkInterfaceStatusReady {
+					status = cdb.GetStrPtr(cdbm.NVLinkInterfaceStatusReady)
+					needsUpdate = true
 				}
 
 				if !needsUpdate {
@@ -783,7 +755,12 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 			}
 		}
 
-		// Delete NVLink Interfaces that are not present in the controller Instance
+		// Determine which NVLink Interfaces in Deleting state can be deleted
+		// If the NVLink Config and Status are empty, we can delete all NVLink Interfaces currently in Deleting state
+		isNVLinkConfigStatusEmpty := len(controllerInstance.Config.GetNvlink().GetGpuConfigs()) == 0 && len(controllerInstance.Status.GetNvlink().GetGpuStatuses()) == 0
+		// If the NVLink Config and Status are synced, we can delete all eligible NVLink Interfaces currently in Deleting state
+		isNVLinkConfigSynced := controllerInstance.Status.Nvlink != nil && controllerInstance.Status.Nvlink.ConfigsSynced == cwsv1.SyncState_SYNCED
+
 		if isNVLinkConfigStatusEmpty || isNVLinkConfigSynced {
 			for _, nvlifc := range deletingNVLinkInterfaces {
 				if util.IsTimeWithinStaleInventoryThreshold(nvlifc.Updated) {
@@ -915,7 +892,7 @@ func (mi ManageInstance) UpdateInstancesInDB(ctx context.Context, siteID uuid.UU
 			}
 
 			// Set isMissingOnSite flag to true and update status/create status detail, user can decide on deletion
-			_, serr := instanceDAO.Update(ctx, nil, cdbm.InstanceUpdateInput{InstanceID: instance.ID, InstanceUpdateCommonInput: cdbm.InstanceUpdateCommonInput{IsMissingOnSite: cdb.GetBoolPtr(true)}})
+			_, serr := instanceDAO.Update(ctx, nil, cdbm.InstanceUpdateInput{InstanceID: instance.ID, IsMissingOnSite: cdb.GetBoolPtr(true)})
 			if serr != nil {
 				// Log error and continue
 				slogger.Error().Err(serr).Msg("failed to set missing on Site flag in DB")
@@ -1144,7 +1121,7 @@ func (mi ManageInstance) updateInstanceStatusInDB(ctx context.Context, tx *cdb.T
 		return nil
 	}
 	instanceDAO := cdbm.NewInstanceDAO(mi.dbSession)
-	_, err := instanceDAO.Update(ctx, tx, cdbm.InstanceUpdateInput{InstanceID: instanceID, InstanceUpdateCommonInput: cdbm.InstanceUpdateCommonInput{Status: status, PowerStatus: powerStatus}})
+	_, err := instanceDAO.Update(ctx, tx, cdbm.InstanceUpdateInput{InstanceID: instanceID, Status: status, PowerStatus: powerStatus})
 	if err != nil {
 		return err
 	}
@@ -1172,8 +1149,6 @@ func getNICoInstanceStatus(controllerInstanceTenantState cwsv1.TenantState) (str
 		return cdbm.InstanceStatusReady, "Instance is ready for use"
 	case cwsv1.TenantState_CONFIGURING:
 		return cdbm.InstanceStatusConfiguring, "Instance is being configured on Site"
-	case cwsv1.TenantState_REPAIRING:
-		return cdbm.InstanceStatusRepairing, "Instance is undergoing online-repair"
 	case cwsv1.TenantState_TERMINATING:
 		return cdbm.InstanceStatusTerminating, "Instance is terminating on Site"
 	case cwsv1.TenantState_TERMINATED:
@@ -1188,6 +1163,8 @@ func getNICoInstanceStatus(controllerInstanceTenantState cwsv1.TenantState) (str
 		return cdbm.InstanceStatusUpdating, "Instance is receiving system firmware updates"
 	case cwsv1.TenantState_UPDATING:
 		return cdbm.InstanceStatusUpdating, "Instance is receiving system firmware updates"
+	case cwsv1.TenantState_REPAIRING:
+		return cdbm.InstanceStatusRepairing, "Instance is undergoing repair on Site"
 	default:
 		return cdbm.InstanceStatusError, "Instance status is unknown"
 	}
@@ -1349,7 +1326,7 @@ func (milm ManageInstanceLifecycleMetrics) RecordInstanceStatusTransitionMetrics
 			// DELETE event: Measure time from Terminating to actual deletion
 			// Find the earliest Terminating status (iterate backwards since sorted DESC)
 			var terminatingSD *cdbm.StatusDetail
-			for i := range slices.Backward(statusDetails) {
+			for i := len(statusDetails) - 1; i >= 0; i-- {
 				if statusDetails[i].Status == cdbm.InstanceStatusTerminating {
 					terminatingSD = &statusDetails[i]
 					break

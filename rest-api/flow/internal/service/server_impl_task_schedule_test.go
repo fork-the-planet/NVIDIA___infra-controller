@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package service
 
@@ -189,7 +203,7 @@ func TestMergeComponentFilters(t *testing.T) {
 		})
 		b := marshalFilter(t, &dbmodel.ComponentFilter{
 			Kind:  dbmodel.ComponentFilterKindTypes,
-			Types: []string{"NVSwitch"},
+			Types: []string{"NVLSwitch"},
 		})
 		merged, changed, err := mergeComponentFilters(a, b)
 		require.NoError(t, err)
@@ -198,13 +212,13 @@ func TestMergeComponentFilters(t *testing.T) {
 		cf, err := dbmodel.UnmarshalComponentFilter(merged)
 		require.NoError(t, err)
 		assert.Equal(t, dbmodel.ComponentFilterKindTypes, cf.Kind)
-		assert.ElementsMatch(t, []string{"Compute", "NVSwitch"}, cf.Types)
+		assert.ElementsMatch(t, []string{"Compute", "NVLSwitch"}, cf.Types)
 	})
 
 	t.Run("types filters b subset of a — unchanged", func(t *testing.T) {
 		a := marshalFilter(t, &dbmodel.ComponentFilter{
 			Kind:  dbmodel.ComponentFilterKindTypes,
-			Types: []string{"Compute", "NVSwitch"},
+			Types: []string{"Compute", "NVLSwitch"},
 		})
 		b := marshalFilter(t, &dbmodel.ComponentFilter{
 			Kind:  dbmodel.ComponentFilterKindTypes,
@@ -216,7 +230,7 @@ func TestMergeComponentFilters(t *testing.T) {
 
 		cf, err := dbmodel.UnmarshalComponentFilter(merged)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, []string{"Compute", "NVSwitch"}, cf.Types)
+		assert.ElementsMatch(t, []string{"Compute", "NVLSwitch"}, cf.Types)
 	})
 
 	t.Run("components filters union", func(t *testing.T) {
@@ -295,7 +309,7 @@ func TestPartitionScopeChanges(t *testing.T) {
 			{RackID: rack1, ComponentFilter: typesFilter(t, "Compute")},
 		}
 		incoming := []*dbmodel.TaskScheduleScope{
-			{RackID: rack1, ComponentFilter: typesFilter(t, "NVSwitch")},
+			{RackID: rack1, ComponentFilter: typesFilter(t, "NVLSwitch")},
 		}
 		toCreate, toMerge, err := partitionScopeChanges(incoming, existing)
 		require.NoError(t, err)
@@ -304,12 +318,12 @@ func TestPartitionScopeChanges(t *testing.T) {
 
 		cf, err := dbmodel.UnmarshalComponentFilter(toMerge[0].ComponentFilter)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, []string{"Compute", "NVSwitch"}, cf.Types)
+		assert.ElementsMatch(t, []string{"Compute", "NVLSwitch"}, cf.Types)
 	})
 
 	t.Run("rack exists, incoming already covered — no-op", func(t *testing.T) {
 		existing := []*dbmodel.TaskScheduleScope{
-			{RackID: rack1, ComponentFilter: typesFilter(t, "Compute", "NVSwitch")},
+			{RackID: rack1, ComponentFilter: typesFilter(t, "Compute", "NVLSwitch")},
 		}
 		incoming := []*dbmodel.TaskScheduleScope{
 			{RackID: rack1, ComponentFilter: typesFilter(t, "Compute")},
@@ -325,7 +339,7 @@ func TestPartitionScopeChanges(t *testing.T) {
 			{RackID: rack1, ComponentFilter: typesFilter(t, "Compute")},
 		}
 		incoming := []*dbmodel.TaskScheduleScope{
-			{RackID: rack1, ComponentFilter: typesFilter(t, "NVSwitch")}, // expand
+			{RackID: rack1, ComponentFilter: typesFilter(t, "NVLSwitch")}, // expand
 			{RackID: rack2}, // new rack
 			{RackID: rack3}, // new rack
 		}
@@ -407,7 +421,7 @@ func TestDiffScopeChanges(t *testing.T) {
 			{RackID: rack1, ID: curID, ComponentFilter: typesFilter(t, "Compute")},
 		}
 		desired := []*dbmodel.TaskScheduleScope{
-			{RackID: rack1, ComponentFilter: typesFilter(t, "NVSwitch")},
+			{RackID: rack1, ComponentFilter: typesFilter(t, "NVLSwitch")},
 		}
 		toAdd, toRemove, toUpdate, err := diffScopeChanges(desired, current)
 		require.NoError(t, err)
@@ -420,7 +434,7 @@ func TestDiffScopeChanges(t *testing.T) {
 
 		cf, err := dbmodel.UnmarshalComponentFilter(toUpdate[0].ComponentFilter)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, []string{"NVSwitch"}, cf.Types)
+		assert.ElementsMatch(t, []string{"NVLSwitch"}, cf.Types)
 	})
 
 	t.Run("comprehensive: add, remove, update, unchanged", func(t *testing.T) {
@@ -435,7 +449,7 @@ func TestDiffScopeChanges(t *testing.T) {
 		}
 		desired := []*dbmodel.TaskScheduleScope{
 			{RackID: rack1}, // unchanged
-			{RackID: rack2, ComponentFilter: typesFilter(t, "NVSwitch")},     // update filter
+			{RackID: rack2, ComponentFilter: typesFilter(t, "NVLSwitch")},    // update filter
 			{RackID: uuid.MustParse("00000000-0000-0000-0002-000000000004")}, // new rack
 		}
 
@@ -475,7 +489,7 @@ func TestTaskScheduleScopeToProto(t *testing.T) {
 	t.Run("types filter populated", func(t *testing.T) {
 		cf := marshalFilter(t, &dbmodel.ComponentFilter{
 			Kind:  dbmodel.ComponentFilterKindTypes,
-			Types: []string{"Compute", "NVSwitch"},
+			Types: []string{"Compute", "NVLSwitch"},
 		})
 		s := &dbmodel.TaskScheduleScope{
 			ID:              scopeID,
@@ -981,7 +995,7 @@ func TestResolveComponentTarget_ExternalID(t *testing.T) {
 		{
 			name: "no match by type — not found",
 			setup: func(m *mockManager) {
-				c := makeComp(compID, devicetypes.ComponentTypeNVSwitch)
+				c := makeComp(compID, devicetypes.ComponentTypeNVLSwitch)
 				c.ComponentID = "ext-1"
 				m.components[compID] = c
 			},
@@ -1011,7 +1025,7 @@ func TestResolveComponentTarget_ExternalID(t *testing.T) {
 				c1 := makeComp(compID, devicetypes.ComponentTypeCompute)
 				c1.ComponentID = "ext-3"
 				m.components[compID] = c1
-				c2 := makeComp(comp2ID, devicetypes.ComponentTypeNVSwitch)
+				c2 := makeComp(comp2ID, devicetypes.ComponentTypeNVLSwitch)
 				c2.ComponentID = "ext-3"
 				m.components[comp2ID] = c2
 			},

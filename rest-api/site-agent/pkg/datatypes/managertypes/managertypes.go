@@ -1,12 +1,26 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package managertypes
 
 import (
 	bootstraptypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/bootstrap"
-	coregrpctypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/coregrpc"
-	flowgrpctypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/flowgrpc"
+	flowtypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/flow"
+	nicotypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/nico"
 	workflowtypes "github.com/NVIDIA/infra-controller-rest/site-agent/pkg/datatypes/managertypes/workflow"
 )
 
@@ -15,8 +29,8 @@ type Managers struct {
 	Version string
 	// All the datastructures of Managers below
 	Workflow  *workflowtypes.Workflow
-	CoreGrpc  *coregrpctypes.CoreGrpc
-	FlowGrpc  *flowgrpctypes.FlowGrpc
+	NICo      *nicotypes.NICo
+	Flow      *flowtypes.Flow
 	Bootstrap *bootstraptypes.Bootstrap
 }
 
@@ -26,8 +40,8 @@ func NewManagerType() *Managers {
 		Version: "0.0.1",
 		// All the managers below
 		Workflow:  workflowtypes.NewWorkflowInstance(),
-		CoreGrpc:  coregrpctypes.NewCoreGrpcInstance(),
-		FlowGrpc:  flowgrpctypes.NewFlowGrpcInstance(),
+		NICo:      nicotypes.NewNICoInstance(),
+		Flow:      flowtypes.NewFlowInstance(),
 		Bootstrap: bootstraptypes.NewBootstrapInstance(),
 	}
 }

@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package builtin
 
@@ -9,8 +23,8 @@ import (
 	computenico "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/compute/nico"
 	cmconfig "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/config"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/mock"
-	nvswitchnico "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/nvswitch/nico"
-	nvswitchnsm "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/nvswitch/nvswitchmanager"
+	nvlswitchnico "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/nvlswitch/nico"
+	nvlswitchnsm "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/nvlswitch/nvswitchmanager"
 	powershelfnico "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/powershelf/nico"
 	powershelfpsm "github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/powershelf/psm"
 	"github.com/NVIDIA/infra-controller-rest/flow/internal/task/componentmanager/providerapi"
@@ -30,7 +44,7 @@ import (
 func defaultServiceComponentManagers() map[devicetypes.ComponentType]string {
 	return map[devicetypes.ComponentType]string{
 		devicetypes.ComponentTypeCompute:    computenico.ImplementationName,
-		devicetypes.ComponentTypeNVSwitch:   nvswitchnico.ImplementationName,
+		devicetypes.ComponentTypeNVLSwitch:  nvlswitchnico.ImplementationName,
 		devicetypes.ComponentTypePowerShelf: powershelfnico.ImplementationName,
 	}
 }
@@ -45,14 +59,6 @@ func serviceProviderConfigDecoders() []providerapi.ProviderConfigDecoder {
 	}
 }
 
-// serviceManagerConfigDecoders returns all manager config decoders supported
-// by the Flow service.
-func serviceManagerConfigDecoders() []cmconfig.ManagerConfigDecoder {
-	return []cmconfig.ManagerConfigDecoder{
-		computenico.ConfigDecoder{},
-	}
-}
-
 // serviceDescriptors returns all component manager descriptors compiled into
 // the Flow service. Descriptors stay in a separate manifest even though
 // FactorySpec also contains a Descriptor because descriptor metadata is needed
@@ -62,8 +68,8 @@ func serviceManagerConfigDecoders() []cmconfig.ManagerConfigDecoder {
 func serviceDescriptors() []cmcatalog.Descriptor {
 	descriptors := []cmcatalog.Descriptor{
 		computenico.Descriptor(),
-		nvswitchnico.Descriptor(),
-		nvswitchnsm.Descriptor(),
+		nvlswitchnico.Descriptor(),
+		nvlswitchnsm.Descriptor(),
 		powershelfnico.Descriptor(),
 		powershelfpsm.Descriptor(),
 	}
@@ -87,8 +93,8 @@ func serviceFactorySpecs(
 
 	factorySpecs := []componentmanager.FactorySpec{
 		computenico.FactorySpec(computePowerDelay),
-		nvswitchnico.FactorySpec(),
-		nvswitchnsm.FactorySpec(),
+		nvlswitchnico.FactorySpec(),
+		nvlswitchnsm.FactorySpec(),
 		powershelfnico.FactorySpec(),
 		powershelfpsm.FactorySpec(),
 	}

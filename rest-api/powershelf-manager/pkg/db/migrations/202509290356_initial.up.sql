@@ -1,6 +1,3 @@
--- SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
--- SPDX-License-Identifier: Apache-2.0
-
 --
 -- Name: pmc; Type: TABLE; Schema: public
 -- Matches Go model: pkg/db/model/pmc.go

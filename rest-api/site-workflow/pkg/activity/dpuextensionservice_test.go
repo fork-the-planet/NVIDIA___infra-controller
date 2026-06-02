@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package activity
 
@@ -18,13 +32,13 @@ import (
 )
 
 func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		CoreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -44,7 +58,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService success",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -59,7 +73,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService fail on missing ServiceId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -74,7 +88,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService fail on empty ServiceId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -89,7 +103,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService fail on missing ServiceName",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -104,7 +118,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService fail on missing TenantOrganizationId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -119,7 +133,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test create DpuExtensionService fail on missing request",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -131,7 +145,7 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageDpuExtensionService(tt.fields.CoreGrpcAtomicClient)
+			mm := NewManageDpuExtensionService(tt.fields.NICoCoreAtomicClient)
 			result, err := mm.CreateDpuExtensionServiceOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -150,13 +164,13 @@ func TestManageDpuExtensionService_CreateDpuExtensionServiceOnSite(t *testing.T)
 }
 
 func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		CoreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -174,7 +188,7 @@ func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test update DpuExtensionService success",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -188,7 +202,7 @@ func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test update DpuExtensionService fail on missing ServiceId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -201,7 +215,7 @@ func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test update DpuExtensionService fail on missing request",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -213,7 +227,7 @@ func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageDpuExtensionService(tt.fields.CoreGrpcAtomicClient)
+			mm := NewManageDpuExtensionService(tt.fields.NICoCoreAtomicClient)
 			result, err := mm.UpdateDpuExtensionServiceOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -232,13 +246,13 @@ func TestManageDpuExtensionService_UpdateDpuExtensionServiceOnSite(t *testing.T)
 }
 
 func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		CoreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -256,7 +270,7 @@ func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test delete DpuExtensionService success",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -269,7 +283,7 @@ func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test delete DpuExtensionService fail on missing ServiceId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -282,7 +296,7 @@ func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T)
 		{
 			name: "test delete DpuExtensionService fail on missing request",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -294,7 +308,7 @@ func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageDpuExtensionService(tt.fields.CoreGrpcAtomicClient)
+			mm := NewManageDpuExtensionService(tt.fields.NICoCoreAtomicClient)
 			err := mm.DeleteDpuExtensionServiceOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -306,13 +320,13 @@ func TestManageDpuExtensionService_DeleteDpuExtensionServiceOnSite(t *testing.T)
 }
 
 func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	type fields struct {
-		CoreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		NICoCoreAtomicClient *cClient.NICoCoreAtomicClient
 	}
 	type args struct {
 		ctx     context.Context
@@ -331,7 +345,7 @@ func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *t
 		{
 			name: "test get DpuExtensionService versions info success",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.WithValue(context.Background(), "wantCount", 20),
@@ -345,7 +359,7 @@ func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *t
 		{
 			name: "test get DpuExtensionService versions info fail on missing ServiceId",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -358,7 +372,7 @@ func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *t
 		{
 			name: "test get DpuExtensionService versions info fail on missing request",
 			fields: fields{
-				CoreGrpcAtomicClient: coreGrpcAtomicClient,
+				NICoCoreAtomicClient: nicoCoreAtomicClient,
 			},
 			args: args{
 				ctx:     context.Background(),
@@ -370,7 +384,7 @@ func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *t
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mm := NewManageDpuExtensionService(tt.fields.CoreGrpcAtomicClient)
+			mm := NewManageDpuExtensionService(tt.fields.NICoCoreAtomicClient)
 			versionInfoList, err := mm.GetDpuExtensionServiceVersionsInfoOnSite(tt.args.ctx, tt.args.request)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -383,10 +397,10 @@ func TestManageDpuExtensionService_GetDpuExtensionServiceVersionsInfoOnSite(t *t
 }
 
 func TestManageDpuExtensionServiceInventory_DiscoverDpuExtensionServiceInventory(t *testing.T) {
-	mockCoreGrpcClient := cClient.NewMockCoreGrpcClient()
+	mockNICo := cClient.NewMockNICoClient()
 
-	coreGrpcAtomicClient := cClient.NewCoreGrpcAtomicClient(&cClient.CoreGrpcClientConfig{})
-	coreGrpcAtomicClient.SwapClient(mockCoreGrpcClient)
+	nicoCoreAtomicClient := cClient.NewNICoCoreAtomicClient(&cClient.NICoCoreClientConfig{})
+	nicoCoreAtomicClient.SwapClient(mockNICo)
 
 	wid := "test-workflow-id"
 	wrun := &tmocks.WorkflowRun{}
@@ -394,7 +408,7 @@ func TestManageDpuExtensionServiceInventory_DiscoverDpuExtensionServiceInventory
 
 	type fields struct {
 		siteID               uuid.UUID
-		coreGrpcAtomicClient *cClient.CoreGrpcAtomicClient
+		nicoCoreAtomicClient *cClient.NICoCoreAtomicClient
 		temporalPublishQueue string
 		sitePageSize         int
 		cloudPageSize        int
@@ -411,7 +425,7 @@ func TestManageDpuExtensionServiceInventory_DiscoverDpuExtensionServiceInventory
 			name: "test collecting and publishing dpu extension service inventory, empty inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -424,7 +438,7 @@ func TestManageDpuExtensionServiceInventory_DiscoverDpuExtensionServiceInventory
 			name: "test collecting and publishing dpu extension service inventory, normal inventory",
 			fields: fields{
 				siteID:               uuid.New(),
-				coreGrpcAtomicClient: coreGrpcAtomicClient,
+				nicoCoreAtomicClient: nicoCoreAtomicClient,
 				temporalPublishQueue: "test-queue",
 				sitePageSize:         100,
 				cloudPageSize:        25,
@@ -444,7 +458,7 @@ func TestManageDpuExtensionServiceInventory_DiscoverDpuExtensionServiceInventory
 
 			manageDpuExtensionService := NewManageDpuExtensionServiceInventory(ManageInventoryConfig{
 				SiteID:                tt.fields.siteID,
-				CoreGrpcAtomicClient:  tt.fields.coreGrpcAtomicClient,
+				NICoCoreAtomicClient:  tt.fields.nicoCoreAtomicClient,
 				TemporalPublishClient: tc,
 				TemporalPublishQueue:  tt.fields.temporalPublishQueue,
 				SitePageSize:          tt.fields.sitePageSize,

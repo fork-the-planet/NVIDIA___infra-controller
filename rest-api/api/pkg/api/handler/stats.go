@@ -1,5 +1,19 @@
-// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package handler
 
@@ -75,10 +89,12 @@ func (gmgsh GetMachineGPUStatsHandler) Handle(c echo.Context) error {
 		return cutil.NewAPIErrorResponse(c, http.StatusForbidden, "User does not have access to the specified site", nil)
 	}
 
+	siteID := &site.ID
+
 	// Fetch all machines for the site (exclude metadata for performance)
 	machineDAO := cdbm.NewMachineDAO(gmgsh.dbSession)
 	machines, _, err := machineDAO.GetAll(ctx, nil, cdbm.MachineFilterInput{
-		SiteIDs:         []uuid.UUID{site.ID},
+		SiteID:          siteID,
 		ExcludeMetadata: true,
 	}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
 	if err != nil {
@@ -94,7 +110,8 @@ func (gmgsh GetMachineGPUStatsHandler) Handle(c echo.Context) error {
 
 	// Fetch GPU capabilities for all machines
 	mcDAO := cdbm.NewMachineCapabilityDAO(gmgsh.dbSession)
-	capabilities, _, err := mcDAO.GetAll(ctx, nil, machineIDs, nil, cdb.GetTypedStrPtr(cdbm.MachineCapabilityTypeGPU),
+	gpuType := cdbm.MachineCapabilityTypeGPU
+	capabilities, _, err := mcDAO.GetAll(ctx, nil, machineIDs, nil, &gpuType,
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, cdb.GetIntPtr(cdbp.TotalLimit), nil)
 	if err != nil {
 		logger.Error().Err(err).Msg("error retrieving GPU capabilities")
@@ -212,7 +229,7 @@ func (gtitsh GetTenantInstanceTypeStatsHandler) Handle(c echo.Context) error {
 	// 5. Fetch all machines with instance types for the site (exclude metadata)
 	machineDAO := cdbm.NewMachineDAO(gtitsh.dbSession)
 	machines, _, err := machineDAO.GetAll(ctx, nil, cdbm.MachineFilterInput{
-		SiteIDs:         []uuid.UUID{site.ID},
+		SiteID:          siteID,
 		InstanceTypeIDs: instanceTypeIDs,
 		ExcludeMetadata: true,
 	}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
@@ -394,10 +411,12 @@ func (gmitsh GetMachineInstanceTypeSummaryHandler) Handle(c echo.Context) error 
 		return cutil.NewAPIErrorResponse(c, http.StatusForbidden, "User does not have access to the specified site", nil)
 	}
 
+	siteID := &site.ID
+
 	// Fetch all machines for the site (exclude metadata for performance)
 	machineDAO := cdbm.NewMachineDAO(gmitsh.dbSession)
 	machines, _, err := machineDAO.GetAll(ctx, nil, cdbm.MachineFilterInput{
-		SiteIDs:         []uuid.UUID{site.ID},
+		SiteID:          siteID,
 		ExcludeMetadata: true,
 	}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
 	if err != nil {
@@ -478,7 +497,8 @@ func (gmitsh GetMachineInstanceTypeStatsHandler) Handle(c echo.Context) error {
 		return cutil.NewAPIErrorResponse(c, http.StatusForbidden, "User does not have access to the specified site", nil)
 	}
 
-	siteIDs := []uuid.UUID{site.ID}
+	siteID := &site.ID
+	siteIDs := []uuid.UUID{*siteID}
 
 	// 1. Fetch all instance types for the site
 	itDAO := cdbm.NewInstanceTypeDAO(gmitsh.dbSession)
@@ -498,7 +518,7 @@ func (gmitsh GetMachineInstanceTypeStatsHandler) Handle(c echo.Context) error {
 	// 2. Fetch all machines for the site (exclude metadata)
 	machineDAO := cdbm.NewMachineDAO(gmitsh.dbSession)
 	machines, _, err := machineDAO.GetAll(ctx, nil, cdbm.MachineFilterInput{
-		SiteIDs:         siteIDs,
+		SiteID:          siteID,
 		ExcludeMetadata: true,
 	}, cdbp.PageInput{Limit: cdb.GetIntPtr(cdbp.TotalLimit)}, nil)
 	if err != nil {
