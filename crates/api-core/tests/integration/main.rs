@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+mod compute_allocation;
 mod connected_device;
 mod credential_rotation;
 mod dhcp_lease_expiration;
