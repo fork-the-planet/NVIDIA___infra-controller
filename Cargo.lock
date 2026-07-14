@@ -2606,6 +2606,7 @@ dependencies = [
  "carbide-api-db",
  "carbide-api-model",
  "carbide-firmware",
+ "carbide-instrument",
  "carbide-redfish",
  "carbide-secrets",
  "carbide-ssh",
